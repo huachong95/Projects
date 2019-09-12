@@ -1,0 +1,9 @@
+[Unit]
+After=NetworkManager.service time-sync.target bluetooth.service
+Requires=bluetooth.service
+[Service]
+Type=simple
+User=root
+ExecStart=/home/nuc/catkin_ws/src/logcart_driver/scripts/logcart.sh
+[Install]
+WantedBy=multi-user.target
