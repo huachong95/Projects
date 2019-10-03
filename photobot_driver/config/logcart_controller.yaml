@@ -15,8 +15,8 @@ base_controller:
   pose_covariance_diagonal : [0.00001, 0.00001, 1000000000000.0, 1000000000000.0, 1000000000000.0, 0.001]
   twist_covariance_diagonal: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-  wheel_separation : 0.43
-  wheel_radius : 0.085
+  wheel_separation : 0.35
+  wheel_radius : 0.05
 
   wheel_separation_multiplier: 1.0 # default: 1.0
   wheel_radius_multiplier    : 1.0 # default: 1.0
@@ -28,10 +28,10 @@ base_controller:
   linear:
     x:
       has_velocity_limits    : true
-      max_velocity           : 0.8 # m/s
-      min_velocity           : -0.2 # m/s
+      max_velocity           : 1.0 # m/s
+      min_velocity           : -1.0 # m/s
       has_acceleration_limits: true
-      max_acceleration       : 0.4  # m/s^2
+      max_acceleration       : 1.0  # m/s^2
       min_acceleration       : -1.0 # m/s^2
       # has_jerk_limits        : true
       # max_jerk               : 0.1  # m/s^3
@@ -39,8 +39,8 @@ base_controller:
       
   angular:
     z:
-      has_velocity_limits    : true
-      max_velocity           : 1.5  # rad/s
+      has_velocity_limits    : false
+      max_velocity           : 10.0  # rad/s
       has_acceleration_limits: true
       max_acceleration       : 2.0  # rad/s^2
       min_acceleration       : -2.0 # rad/s^2
