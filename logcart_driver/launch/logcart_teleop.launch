@@ -1,6 +1,6 @@
 <launch>
     <!-- set logging level -->
-    <param name="log_level" value="3"/> <!-- DEBUG=0, INFO=1, WARN=2, ERROR=3, FATAL=4 -->
+    <param name="log_level" value="0"/> <!-- DEBUG=0, INFO=1, WARN=2, ERROR=3, FATAL=4 -->
     <env name="ROSCONSOLE_CONFIG_FILE" value="$(find logcart_driver)/config/custom_rosconsole.conf" />
 
     <!-- remap topic namespace -->

@@ -258,9 +258,8 @@ void LogcartHardware::write()
         if (!isSerialPortDown)
         {
             // ?S,XX_XX,\r
-            // std::string speedCmd =  "?S," + rpm1 + "_" + rpm2 + ",\r";
-            std::string speedCmd =  "?S," + 80 + "_" + 80 + ",\r";
-
+            std::string speedCmd =  "?S," + rpm1 + "_" + rpm2 + ",\r";
+            // std::string speedCmd =  "?S," + std::to_string(80) + "_" + std::to_string(80) + ",\r";
             serial.write(speedCmd);
             
             ROS_DEBUG("Serial Write: %s", speedCmd.c_str());
