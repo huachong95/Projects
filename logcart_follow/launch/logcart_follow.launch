@@ -1,0 +1,72 @@
+<launch>
+
+    <!-- Logcart Driver -->
+    <include file="$(find logcart_driver)/launch/logcart_teleop.launch" />
+
+    <!-- RP Lidar -->
+    <include file="$(find logcart_follow)/launch/rplidar.launch" />
+
+    <!-- Transform -->
+    <node name="base_to_scanner" pkg="tf2_ros" type="static_transform_publisher" args="0.314 0 0 0 0 0 base_link laser"/>
+
+    <!-- Laser filter -->
+    <node name="laser_filter" pkg="laser_filters" type="scan_to_scan_filter_chain" output="screen" respawn="true">
+        <!-- Range and Box filters -->
+        <rosparam command="load" file="$(find logcart_follow)/config/chaperon_laser_config.yaml"/>
+    </node>
+
+    <!-- Leader tracking -->
+    <node name="track_leader_node" pkg="logcart_follow" type="track_leader" output="screen" respawn="true">
+        <param name="lidarArcLen_StandardDeviation" type="double" value="0.3" />
+        <param name="lidarRange_StandardDeviation" type="double" value="0.2" />
+        <param name="defaultArcLen_StandardDeviation" type="double" value="0.3" />
+        <param name="defaultRange_StandardDeviation" type="double" value="0.2" />
+        <param name="thresholdFactor" type="double" value="0.5" />
+        <param name="objectPointGapThreshold" type="double" value="0.13" />
+        <param name="globPointGapThreshold" type="double" value="0.4" />
+        <param name="gapSizeThreshold" type="int" value="2" />
+        <param name="minimumLeaderSizeForPostProcess" type="int" value="5" />
+        <param name="doEdgeDetection" type="bool" value="false" />
+        <param name="maxLeaderSize" type="int" value="50" />
+    </node>
+
+    <!-- Leader following -->
+    <node name="follow_leader_node" pkg="logcart_follow" type="follow_leader" output="screen" respawn="true">
+        <param name="odomTopic" type="string" value="/base_controller/odom" />
+        <param name="cmd_velTopic" type="string" value="/base_controller/cmd_vel" />
+        <param name="estopCountThreshold" type="int" value="1" />
+        <param name="kdpositive" type="double" value="0.0"/>
+        <param name="kdnegative" type="double" value="1.0"/>
+        <param name="costMapGradient" type="int" value="6"/>
+        <param name="goalDistancePenaltyFactor" type="double" value="0.6"/>
+        <param name="obstacleProximityPenaltyFactor" type="double" value="0.4"/>
+        <param name="goalPenaltyShape" type="double" value="2.0"/>
+        <param name="stopGap" type="double" value="0.70"/>
+        <param name="regionGap0" type="double" value="1.2"/>
+        <param name="regionGap1" type="double" value="1.3"/>
+        <param name="regionGap2" type="double" value="1.4"/>
+        <param name="regionGap3" type="double" value="1.5"/>
+        <param name="regionGap4" type="double" value="1.6"/>
+        <param name="speedAtGap0" type="double" value="1.0"/>
+        <param name="speedAtGap1" type="double" value="1.0"/>
+        <param name="speedAtGap2" type="double" value="1.0"/>
+        <param name="speedAtGap3" type="double" value="1.0"/>
+        <param name="largerPathCompensation" type="double" value="0.0"/>
+        <param name="smallerPathCompensation" type="double" value="0.0"/>
+        <param name="yawrateOscillationThreshold1" type="double" value="0.06"/>
+        <param name="yawrateOscillationCoefficient1" type="double" value="1.0"/>
+        <param name="yawrateOscillationThreshold2" type="double" value="0.15"/>
+        <param name="yawrateOscillationCoefficient2" type="double" value="1.0"/>
+        <param name="numberOfTrajectoryPlans" type="int" value="30"/>
+        <param name="trajectoryPlannerRadiusResolution" type="double" value="0.04"/>
+        <param name="trajectoryPlannerAngularResolution" type="double" value="0.1"/>
+        <param name="pathArcStepSize" type="double" value="0.01"/>
+        <param name="maxPathArcDistance" type="double" value="1.5"/>
+        <param name="minSpeedDifference" type="double" value="-0.7"/>
+        <param name="lidarToTurningAxis" type="double" value="0.48"/>
+        <param name="centerAxisToSideBoundary" type="double" value="0.35"/>
+        <param name="max_linear_velocity" type="double" value="1.0" />
+        <param name="max_angular_velocity" type="double" value="0.5" />
+    </node>
+
+</launch>

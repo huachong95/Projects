@@ -1,0 +1,5 @@
+<launch>
+    <include file="$(find logcart_follow)/launch/logcart_follow.launch" />
+
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find logcart_follow)/rviz/rplidar.rviz" />
+</launch>

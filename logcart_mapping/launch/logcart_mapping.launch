@@ -1,0 +1,33 @@
+<launch>
+
+    <!-- Logcart Driver -->
+    <include file="$(find logcart_driver)/launch/logcart_teleop.launch" />
+
+    <!-- RP Lidar -->
+    <!-- include file="$(find logcart_follow)/launch/rplidar.launch" / -->
+    
+    <!-- SICK Lidar -->
+    <include file="$(find logcart_follow)/launch/sicklidar.launch" />
+
+    <!-- Transform -->
+    <node name="base_to_scanner" pkg="tf2_ros" type="static_transform_publisher" args="0.247 0 0 0 0 0 base_link laser"/>
+
+    <!-- Laser filter -->
+    <node name="laser_filter" pkg="laser_filters" type="scan_to_scan_filter_chain" output="screen" respawn="true">
+        <!-- Range and Box filters -->
+        <rosparam command="load" file="$(find logcart_follow)/config/chaperon_laser_config.yaml"/>
+    </node>
+
+    <!-- Mapping -->
+    <node name="logcart_mapping" pkg="gmapping" type="slam_gmapping">
+        <remap from="scan" to="scan_filtered" />
+        <param name="xmin" value="0.0" type="double" />
+        <param name="ymin" value="0.0" type="double" />
+        <param name="xmax" value="20.0" type="double" />
+        <param name="ymax" value="20.0" type="double" />
+        <param name="lskip" value="0" type="int" />
+        <param name="linearUpdate" value="0.1" type="double" />
+        <param name="angularUpdate" value="0.1" type="double" />
+    </node>
+
+</launch>
