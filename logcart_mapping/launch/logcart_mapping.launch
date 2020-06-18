@@ -1,13 +1,13 @@
 <launch>
 
     <!-- Logcart Driver -->
-    <include file="$(find logcart_driver)/launch/logcart_teleop.launch" />
+    <!-- <include file="$(find logcart_driver)/launch/logcart_teleop.launch" /> -->
 
     <!-- RP Lidar -->
     <!-- include file="$(find logcart_follow)/launch/rplidar.launch" / -->
     
     <!-- SICK Lidar -->
-    <include file="$(find logcart_follow)/launch/sicklidar.launch" />
+    <!-- <include file="$(find logcart_follow)/launch/sicklidar.launch" /> -->
 
     <!-- Transform -->
     <node name="base_to_scanner" pkg="tf2_ros" type="static_transform_publisher" args="0.247 0 0 0 0 0 base_link laser"/>
