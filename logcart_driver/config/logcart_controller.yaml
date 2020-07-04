@@ -16,7 +16,7 @@ base_controller:
   twist_covariance_diagonal: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
   wheel_separation : 0.22
-  wheel_radius : 0.0325
+  wheel_radius : 0.0425
 
   wheel_separation_multiplier: 1.0 # default: 1.0
   wheel_radius_multiplier    : 1.0 # default: 1.0
