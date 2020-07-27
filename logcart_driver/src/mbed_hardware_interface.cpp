@@ -446,49 +446,12 @@ void LogcartHardware::velocityRecvCallback(const geometry_msgs::Twist::ConstPtr 
     linear = twist->linear.x;
     angular = twist->angular.z;
 
-    // ROS_DEBUG("linear x: %.4f, angular.x: %.4f", twist->linear.x, twist->angular.z);
+    ROS_DEBUG("linear x: %.4f, angular.x: %.4f", twist->linear.x, twist->angular.z);
 
     // Calculate wheel speeds in m/s, considering turning
     left_speed = linear - (angular * (wheel_base / 2));
     right_speed = linear + (angular * (wheel_base / 2));
 
-    // ROS_DEBUG("left_speed: %.2f, right_speed: %.2f, wheelbase/2: %.2f", left_speed, right_speed, wheel_base / 2);
-
-    // Speed limiting
-    // if(left_speed < 0.0)
-    // {
-    //     if(fabs(left_speed) >= maxLinearVelocity)
-    //     {
-    //         left_speed = -maxLinearVelocity;
-    //     }
-    // }
-    // else
-    // {
-    //     if(left_speed >= maxLinearVelocity)
-    //     {
-    //         left_speed = maxLinearVelocity;
-    //     }
-    // }
-
-    // if(right_speed < 0.0)
-    // {
-    //     if(fabs(right_speed) >= maxLinearVelocity)
-    //     {
-    //         right_speed = -maxLinearVelocity;
-    //     }
-    // }
-    // else
-    // {
-    //     if(right_speed >= maxLinearVelocity)
-    //     {
-    //         right_speed = maxLinearVelocity;
-    //     }
-    // }
-
-    //cmd[0] = left_speed;
-    //cmd[1] = right_speed;
-
-    // ROS_DEBUG("cmd[0]: %.2f, cmd[1]: %.2f", cmd[0], cmd[1]);
 }
 
 void LogcartHardware::odomCallback(const nav_msgs::Odometry::ConstPtr &msg)

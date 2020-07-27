@@ -40,7 +40,7 @@ base_controller:
   angular:
     z:
       has_velocity_limits    : true
-      max_velocity           : 120.0  # rad/s
+      max_velocity           : 500.0  # rad/s
       has_acceleration_limits: true
       max_acceleration       : 2.0  # rad/s^2
       min_acceleration       : -2.0 # rad/s^2
