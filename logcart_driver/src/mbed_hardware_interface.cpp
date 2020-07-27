@@ -165,7 +165,7 @@ void LogcartHardware::read()
                 /* Find number of headers in serial string buffer */
                 int numOfHeaders = std::count(serialStrBuffer.begin(), serialStrBuffer.end(), '?');
 
-                ROS_DEBUG("Num of headers found: %d", numOfHeaders);
+                // ROS_DEBUG("Num of headers found: %d", numOfHeaders);
 
                 /* Loop for number of headers found */
                 for(int i=0; i<numOfHeaders; i++)
@@ -179,7 +179,7 @@ void LogcartHardware::read()
                         isHeartBeatPresent = true;
                         indexHeartBeat = serialStrBuffer.find(HEARTBEAT_HEADER);
 
-                        ROS_DEBUG("Heartbeat Index: %d", indexHeartBeat);
+                        // ROS_DEBUG("Heartbeat Index: %d", indexHeartBeat);
                     }
 
                     /* Check if batt voltage header is found (not equal to string::npos) */
@@ -315,7 +315,7 @@ void LogcartHardware::processBattVoltageMessage(std::string &serialStr, int inde
     if(serialStr.find("+") != std::string::npos)
     {
         int indexMsgEnd = serialStr.find("+");
-        ROS_DEBUG("indexMsgEnd: %d", indexMsgEnd);
+        // ROS_DEBUG("indexMsgEnd: %d", indexMsgEnd);
         
         /* Extract batt voltage message from serial string buffer */
         std::string strBattVoltage = serialStr.substr(indexHeader, (indexMsgEnd - indexHeader) + 1);
@@ -341,7 +341,7 @@ void LogcartHardware::processBattVoltageMessage(std::string &serialStr, int inde
         }
         else
         {
-            ROS_ERROR("Invalid number of fields detected in Batt Voltage message.");
+            // ROS_ERROR("Invalid number of fields detected in Batt Voltage message.");
         }
 
         /* Remove the batt voltage message from the serial string buffer */
@@ -368,7 +368,7 @@ void LogcartHardware::processHeartbeatMessage(std::string &serialStr, int indexH
         
         /* Extract heartbeat message from serial string buffer */
         std::string strHeartBeat = serialStr.substr(indexHeader, (indexMsgEnd - indexHeader) + 1);
-        ROS_DEBUG("strHeartBeat: %s", strHeartBeat.c_str());
+        // ROS_DEBUG("strHeartBeat: %s", strHeartBeat.c_str());
 
         /* Check if number of fields is correct */
         if(std::count(strHeartBeat.begin(), strHeartBeat.end(), '_') == (FIELDS_IN_HEARTBEAT_MSG - 1))
@@ -445,12 +445,13 @@ void LogcartHardware::velocityRecvCallback(const geometry_msgs::Twist::ConstPtr 
     // Extract linear and angular velocities from the message
     linear = twist->linear.x;
     angular = twist->angular.z;
+    ROS_DEBUG("Enters velocity receive callback");
 
     ROS_DEBUG("linear x: %.4f, angular.x: %.4f", twist->linear.x, twist->angular.z);
 
     // Calculate wheel speeds in m/s, considering turning
-    left_speed = linear - (angular * (wheel_base / 2));
-    right_speed = linear + (angular * (wheel_base / 2));
+    // left_speed = linear - (angular * (wheel_base / 2));
+    // right_speed = linear + (angular * (wheel_base / 2));
 
 }
 
