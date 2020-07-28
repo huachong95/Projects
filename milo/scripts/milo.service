@@ -1,0 +1,9 @@
+[Unit]
+After=NetworkManager.service time-sync.target bluetooth.service
+Requires=bluetooth.service
+[Service]
+Type=simple
+User=root
+ExecStart=/home/huachong/catkin_ws/src/milo/scripts/milo.sh
+[Install]
+WantedBy=multi-user.target
