@@ -26,32 +26,24 @@ private:
 
 TeleopJoy::TeleopJoy() : l_axis(1), a_axis(2), trackingButtonActive(false)
 {
-    nh_.param("/teleop_joy_node/axis_linear", l_axis, l_axis);
-    nh_.param("/teleop_joy_node/axis_angular", a_axis, a_axis);
-    nh_.param("/teleop_joy_node/scale_linear", l_scale_, l_scale_);
-    nh_.param("/teleop_joy_node/scale_angular", a_scale_, a_scale_);
+    nh_.param("/milo_teleop_joy/axis_linear", l_axis, l_axis);
+    nh_.param("/milo_teleop_joy/axis_angular", a_axis, a_axis);
+    nh_.param("/milo_teleop_joy/scale_linear", l_scale_, l_scale_);
+    nh_.param("/milo_teleop_joy/scale_angular", a_scale_, a_scale_);
 
     vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/joystick/cmd_vel", 100);
     button_pub_ = nh_.advertise<milo::Joystick>("joy_buttons", 100);
 
     joy_sub_ = nh_.subscribe<sensor_msgs::Joy>("joy", 100, &TeleopJoy::joyCallback, this);
-    navi_sub_ = nh_.subscribe<geometry_msgs::Twist>("/navi/cmd_vel",100, &TeleopJoy::naviCallback, this);
 }
-void TeleopJoy::naviCallback(const geometry_msgs::Twist::ConstPtr &navi){
-    if (joy_buttons.enableTracking == 2) {
-        geometry_msgs::Twist twist;
-        twist.angular.z = navi->angular.z; 
-        twist.linear.x = navi->linear.x;
-        vel_pub_.publish(twist);
-}
-}
+
 // Manipulate joystick data by scaling it and using independent axes
 void TeleopJoy::joyCallback(const sensor_msgs::Joy::ConstPtr &joy)
 {
     geometry_msgs::Twist twist;
     twist.angular.z = a_scale_ * joy->axes[a_axis];
     twist.linear.x = l_scale_ * joy->axes[l_axis];
-    //vel_pub_.publish(twist);
+    vel_pub_.publish(twist);
 
     // TODO: Clean up the implementation below!!!!
     // enableTracking = 0 means joystick mode
@@ -89,8 +81,11 @@ void TeleopJoy::joyCallback(const sensor_msgs::Joy::ConstPtr &joy)
 
 int main(int argc, char **argv)
 {
+    std::cout<<"JOYSTICK"<<std::endl;
     ros::init(argc, argv, "milo_teleop_joy");
-    TeleopJoy teleop_joy;
+    TeleopJoy milo_teleop_joy;
     ros::spin();
+    std::cout<<"JOYSTICK"<<std::endl;
     return 0;
+
 }
