@@ -41,8 +41,8 @@ TeleopJoy::TeleopJoy() : l_axis(1), a_axis(2), trackingButtonActive(false)
 void TeleopJoy::joyCallback(const sensor_msgs::Joy::ConstPtr &joy)
 {
     geometry_msgs::Twist twist;
-    twist.angular.z = a_scale_ * joy->axes[a_axis];
-    twist.linear.x = l_scale_ * joy->axes[l_axis];
+    twist.angular.x = a_scale_ * joy->axes[a_axis];
+    twist.linear.y = l_scale_ * joy->axes[l_axis];
     vel_pub_.publish(twist);
 
     // TODO: Clean up the implementation below!!!!
@@ -50,33 +50,84 @@ void TeleopJoy::joyCallback(const sensor_msgs::Joy::ConstPtr &joy)
     // enableTracking = 1 means follow-mode mode
     // enableTracking = 2 means navigation mode
 
-    if (joy->buttons[5] == 1.0)
+    if (joy->buttons[0]==1.0) // BUTTON A
     {
-        // joy->buttons[5] => RB button (1 when pressed else 0)
-        ROS_INFO("RB button pressed - disable joy, disable navigation, follow-mode takes over.");
-        joy_buttons.enableTracking = 1;
-        button_pub_.publish(joy_buttons);
-    }
-    else if (joy->buttons[4] == 1.0)
-    {
-        // joy->buttons[4] => LB button (1 when pressed else 0)
-        ROS_INFO("LB button pressed - disable follow-mode, disable joy, navigation takes over.");
-        joy_buttons.enableTracking = 2;
-        button_pub_.publish(joy_buttons);
-    }
-    else if (joy->buttons[7] == 1.0)
-    {
-        // joy->buttons[7] => RT button (1 when pressed else 0)
-        ROS_INFO("RT button pressed - disable follow-mode, disable navigation, joy takes over");
-        joy_buttons.enableTracking = 0;
+        ROS_INFO("A button pressed");
+        joy_buttons.joystick_mode=0;
         button_pub_.publish(joy_buttons);
     }
 
-    // Publish joystick/cmd_vel
-    if (joy_buttons.enableTracking == 0)
+    if (joy->buttons[1]==1.0) // BUTTON B
     {
-        vel_pub_.publish(twist);
+        ROS_INFO("B button pressed");
+        joy_buttons.joystick_mode=1;
+        button_pub_.publish(joy_buttons);
     }
+     
+    if (joy->buttons[2]==1.0) // BUTTON X
+    {
+        ROS_INFO("X button pressed");
+        joy_buttons.joystick_mode=2;
+        button_pub_.publish(joy_buttons);
+    }
+    
+    if (joy->buttons[3]==1.0) // BUTTON Y
+    {
+        ROS_INFO("Y button pressed");
+        joy_buttons.joystick_mode=3;
+        button_pub_.publish(joy_buttons);
+    }
+    
+    if (joy->buttons[4]==1.0) // BUTTON LB
+    {
+        ROS_INFO("LB button pressed");
+        joy_buttons.joystick_mode=4;
+        button_pub_.publish(joy_buttons);
+    }
+
+    if (joy->buttons[5]==1.0) // BUTTON RB
+    {
+        ROS_INFO("B button pressed");
+        joy_buttons.joystick_mode=5;
+        button_pub_.publish(joy_buttons);
+    }
+     
+    if (joy->buttons[6]==1.0) // BUTTON BACK
+    {
+        ROS_INFO("BACK button pressed");
+        joy_buttons.joystick_mode=6;
+        button_pub_.publish(joy_buttons);
+    }
+    
+    if (joy->buttons[7]==1.0) // BUTTON START
+    {
+        ROS_INFO("START button pressed");
+        joy_buttons.joystick_mode=7;
+        button_pub_.publish(joy_buttons);
+    }
+    if (joy->buttons[8]==1.0) // BUTTON POWER
+    {
+        ROS_INFO("POWER button pressed");
+        joy_buttons.joystick_mode=8;
+        button_pub_.publish(joy_buttons);
+    }
+    
+    if (joy->buttons[9]==1.0) // BUTTON LEFTJOY
+    {
+        ROS_INFO("LEFTJOY button pressed");
+        joy_buttons.joystick_mode=9;
+        button_pub_.publish(joy_buttons);
+    }
+
+    if (joy->buttons[10]==1.0) // BUTTON RIGHTJOY
+    {
+        ROS_INFO("RIGHTJOY button pressed");
+        joy_buttons.joystick_mode=10;
+        button_pub_.publish(joy_buttons);
+    }
+
+
+
 }
 
 int main(int argc, char **argv)

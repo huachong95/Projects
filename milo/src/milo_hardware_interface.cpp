@@ -22,15 +22,35 @@
 #include <vector>
 #include <regex>
 
-
-void initMilo()
+class Milo_hardware
 {
-std::cout<<"YES THIS IS BEING INITIALISED"<<std::endl;
-}
+public:
+    Milo_hardware();
+    // double max_l_speed,max_angular_speed,wheel_radius,wheel_distance;
+private:
+    ros::NodeHandle nh_;
+    ros::Subscriber cmd_vel_sub_;
+    ros::Subscriber button_sub_;
+    void initMilo();
+    
+
+
+
+};
+
+
+
+// Milo_hardware::Milo_hardware(): wheel_radius(1)
+// {
+//     nh_.param("milo_hardware_interface/wheel_radius", wheel_radius);
+
+// }
+
+
 
 int main(int argc, char **argv)
 {
-    double loop_hz;
+    double loop_hz,wheel_radius;
 
     ros::init(argc, argv, "milo_hardware_interface");
     ros::NodeHandle nh;
@@ -40,8 +60,8 @@ int main(int argc, char **argv)
 
     current_time = ros::Time::now();
     last_time = ros::Time::now();
-    initMilo();
     nh.param("/milo/hardware_interface/loop_hz", loop_hz, 10.0);
+    nh.param("/milo_hardware_interface/wheel_radius",wheel_radius, 10.0);
     ros::Rate rate(loop_hz);
     spinner.start();
 
@@ -52,7 +72,7 @@ int main(int argc, char **argv)
         elapsed_time = current_time - last_time;
         last_time = current_time;
         rate.sleep();
-        std::cout<<"Loop Time"<<elapsed_time<<std::endl;
+        std::cout<<wheel_radius<<std::endl;
     }
 
     spinner.stop();

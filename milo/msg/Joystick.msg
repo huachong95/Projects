@@ -1,1 +1,1 @@
-uint16 enableTracking
+uint16 joystick_mode
