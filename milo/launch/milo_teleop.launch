@@ -26,9 +26,10 @@
         <param name="port_mbed" type="string" value="/dev/ttyACM0" />
         <param name="baud_rate" type="int" value="115200" /> -->
         <param name="max_l_speed" type="double" value="2.5" /> -->
-        <param name="max_angular_speed" type="double" value="3.1415" /> -->
+        <param name="max_ang_speed" type="double" value="3.1415" /> -->
         <param name="wheel_radius" type="double" value="0.0325" />  --> 
         <param name="wheel_distance" type="double" value="0.22" /> -->
+        <param name="loop_hz" type="double" value="20.0" /> -->
         <!-- <param name="port_mbed" type="string" value="/dev/tnt0" /> -->
     </node>
 
