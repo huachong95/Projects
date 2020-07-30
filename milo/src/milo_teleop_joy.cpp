@@ -10,7 +10,6 @@ public:
 
 private:
     void joyCallback(const sensor_msgs::Joy::ConstPtr &joy);
-    void naviCallback(const geometry_msgs::Twist::ConstPtr &navi);
     ros::NodeHandle nh_;
     ros::Publisher vel_pub_;
     ros::Publisher button_pub_;
@@ -31,7 +30,7 @@ TeleopJoy::TeleopJoy() : l_axis(1), a_axis(2), trackingButtonActive(false)
     nh_.param("/milo_teleop_joy/scale_linear", l_scale_, l_scale_);
     nh_.param("/milo_teleop_joy/scale_angular", a_scale_, a_scale_);
 
-    vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/joystick/cmd_vel", 100);
+    vel_pub_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 100);
     button_pub_ = nh_.advertise<milo::Joystick>("joy_buttons", 100);
 
     joy_sub_ = nh_.subscribe<sensor_msgs::Joy>("joy", 100, &TeleopJoy::joyCallback, this);

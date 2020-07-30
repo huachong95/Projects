@@ -144,7 +144,6 @@ int main(int argc, char **argv)
         elapsed_time = current_time - last_time;
         last_time = current_time;
         rate.sleep();
-        std::cout<<wheel_radius<<std::endl;
     }
 
     spinner.stop();
