@@ -1,4 +1,4 @@
 milo:
   hardware_interface:
-    loop_hz: 50
+    loop_hz: 1
 
