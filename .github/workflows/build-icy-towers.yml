@@ -14,8 +14,14 @@ jobs:
         working-directory: icy-towers
 
     steps:
-      - name: Checkout
+      # Sparse checkout: only pull icy-towers/ to avoid files with spaces in
+      # other folders (e.g. picar/python /camera.sh) that Windows git rejects.
+      - name: Checkout (sparse)
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            icy-towers
+          sparse-checkout-cone-mode: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -42,8 +48,12 @@ jobs:
         working-directory: icy-towers
 
     steps:
-      - name: Checkout
+      - name: Checkout (sparse)
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            icy-towers
+          sparse-checkout-cone-mode: true
 
       - name: Install system deps
         run: |
