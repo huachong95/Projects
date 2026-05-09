@@ -1,0 +1,81 @@
+name: Build Icy Towers (Windows .exe)
+
+on:
+  push:
+    paths:
+      - 'icy-towers/**'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: icy-towers
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pygame pyinstaller
+
+      - name: Build executable
+        run: pyinstaller icy_towers.spec --clean
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: IcyTowers-Windows
+          path: icy-towers/dist/IcyTowers.exe
+          retention-days: 30
+
+  build-linux:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: icy-towers
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip libsdl2-dev libsdl2-image-dev \
+            libsdl2-mixer-dev libsdl2-ttf-dev
+
+      - name: Install Python deps
+        run: pip install pygame pyinstaller
+
+      - name: Verify game runs (headless smoke test)
+        run: |
+          python - <<'EOF'
+          import sys, os
+          os.environ['SDL_VIDEODRIVER'] = 'dummy'
+          os.environ['SDL_AUDIODRIVER'] = 'dummy'
+          import pygame
+          pygame.init()
+          # Import the game module to check for syntax / import errors
+          import importlib.util
+          spec = importlib.util.spec_from_file_location("icy_towers", "icy_towers.py")
+          mod  = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(mod)
+          print("Smoke test passed.")
+          EOF
+
+      - name: Build Linux executable
+        run: pyinstaller icy_towers.spec --clean
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: IcyTowers-Linux
+          path: icy-towers/dist/IcyTowers
+          retention-days: 30
