@@ -15,10 +15,12 @@ jobs:
         working-directory: icy-towers
 
     steps:
-      # Windows Git rejects tree paths with trailing spaces (e.g. 'picar/python /camera.sh')
-      # during fetch via core.protectNTFS. Disable that check globally so the fetch succeeds,
-      # then rely on sparse-checkout to only write icy-towers/ files to disk.
+      # core.protectNTFS must be disabled before checkout because this repo
+      # contains 'picar/python /camera.sh' (trailing space) which Windows Git
+      # rejects during fetch. Override working-directory here because icy-towers/
+      # does not exist yet (the job default applies only after checkout).
       - name: Configure Git (allow unusual paths in tree)
+        working-directory: ${{ github.workspace }}
         run: git config --global core.protectNTFS false
 
       - name: Checkout (sparse – icy-towers only)
