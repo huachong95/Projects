@@ -6,6 +6,7 @@ import 'features/viewer/viewer_screen.dart';
 import 'features/slice_settings/slice_settings_screen.dart';
 import 'features/print_monitor/print_monitor_screen.dart';
 import 'features/timelapse/timelapse_screen.dart';
+import 'features/printer_connection/printer_connection_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -22,5 +23,6 @@ final appRouter = GoRouter(
     ),
     GoRoute(path: '/monitor', builder: (_, __) => const PrintMonitorScreen()),
     GoRoute(path: '/timelapse', builder: (_, __) => const TimelapseScreen()),
+    GoRoute(path: '/connect', builder: (_, __) => const PrinterConnectionScreen()),
   ],
 );

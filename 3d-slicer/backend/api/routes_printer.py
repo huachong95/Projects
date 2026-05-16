@@ -1,16 +1,21 @@
+from typing import Optional
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from printer.printer_manager import ConnectionConfig, PrinterManager
 from printer.prusalink_driver import discover_prusalink
+from slicer.slicer_service import SlicerService
 
 router = APIRouter()
-_printer: PrinterManager = None
+_printer: Optional[PrinterManager] = None
+_slicer: Optional[SlicerService] = None
 
 
-def init(printer_manager: PrinterManager) -> None:
-    global _printer
+def init(printer_manager: PrinterManager, slicer_service: SlicerService) -> None:
+    global _printer, _slicer
     _printer = printer_manager
+    _slicer = slicer_service
 
 
 class GcodeCommand(BaseModel):
@@ -53,10 +58,7 @@ async def get_status():
 async def start_print(req: PrintRequest):
     if not _printer.is_connected:
         raise HTTPException(503, "Printer not connected")
-    # Locate gcode path from the slicer service (injected via app state)
-    from main import app
-    slicer = app.state.slicer
-    job = slicer.get_job(req.slice_job_id)
+    job = _slicer.get_job(req.slice_job_id)
     if not job:
         raise HTTPException(404, "Slice job not found")
     success = await _printer.upload_and_print(job.processed_gcode_path, req.filename)

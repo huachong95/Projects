@@ -60,6 +60,12 @@ class _HomeScreenState extends State<HomeScreen> {
               runSpacing: 16,
               children: [
                 _ActionCard(
+                  icon: Icons.print_outlined,
+                  label: 'Connect Printer',
+                  description: 'PrusaLink / Mk4 setup',
+                  onTap: () => context.go('/connect'),
+                ),
+                _ActionCard(
                   icon: Icons.file_upload_outlined,
                   label: 'Import Model',
                   description: 'Load STL, 3MF, or OBJ',

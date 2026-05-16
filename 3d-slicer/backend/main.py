@@ -70,7 +70,7 @@ app.state.ai_monitor = ai_monitor
 # Wire up routers
 routes_mesh.init(mesh_service)
 routes_slicer.init(slicer_service, settings.temp_dir)
-routes_printer.init(printer_manager)
+routes_printer.init(printer_manager, slicer_service)
 
 app.include_router(routes_mesh.router, prefix="/api/mesh", tags=["mesh"])
 app.include_router(routes_slicer.router, prefix="/api/slice", tags=["slicer"])
