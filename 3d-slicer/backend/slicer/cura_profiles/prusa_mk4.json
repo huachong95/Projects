@@ -1,0 +1,18 @@
+{
+  "machine_name": "Prusa MK4",
+  "machine_width": 250,
+  "machine_depth": 210,
+  "machine_height": 220,
+  "machine_nozzle_size": 0.4,
+  "machine_heated_bed": true,
+  "machine_start_gcode": "M862.3 P \"MK4\"\nM862.1 P0.4\nG28\nG29",
+  "machine_end_gcode": "G4 ; wait\nM221 S100\nM900 K0\nM104 S0\nM140 S0\nG92 E0\nG1 E-1 F300\nG1 Z+5 E-5 X-20 Y-20 F9000\nG28 X Y\nM84\nM82",
+  "material_print_temperature": 215,
+  "material_print_temperature_layer_0": 215,
+  "material_bed_temperature": 60,
+  "material_bed_temperature_layer_0": 65,
+  "speed_print": 60,
+  "speed_travel": 150,
+  "retraction_amount": 1.0,
+  "retraction_speed": 45
+}

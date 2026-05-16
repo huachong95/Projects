@@ -1,0 +1,34 @@
+# CuraEngine binary (AGPL - download via scripts/download_curaengine.sh)
+backend/slicer/cura_engine/
+
+# Three.js assets (downloaded via scripts/setup_dev.sh - MIT license, ~1MB)
+frontend/assets/viewer/three.min.js
+frontend/assets/viewer/STLLoader.js
+frontend/assets/viewer/OrbitControls.js
+
+# Python
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/data/
+
+# Firebase credentials (never commit)
+backend/firebase_credentials.json
+backend/.env
+
+# AI model weights (download separately)
+backend/monitoring/models/*.onnx
+backend/monitoring/models/*.pt
+
+# Flutter
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/build/
+frontend/pubspec.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp

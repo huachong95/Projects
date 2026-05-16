@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a1a2e; overflow: hidden; }
+  canvas { display: block; }
+  #info { position: absolute; top: 8px; left: 8px; color: #aaa; font: 12px monospace; }
+</style>
+</head>
+<body>
+<div id="info">Loading…</div>
+<script src="three.min.js"></script>
+<script src="STLLoader.js"></script>
+<script src="OrbitControls.js"></script>
+<script>
+// Scene setup
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a2e);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 10000);
+camera.position.set(0, -150, 200);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+document.body.appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+// Lighting
+scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+dirLight.position.set(100, 100, 100);
+scene.add(dirLight);
+
+// Grid
+const grid = new THREE.GridHelper(300, 30, 0x444466, 0x333355);
+scene.add(grid);
+
+// Build plate (Prusa Mk4: 250x210mm)
+const plateGeo = new THREE.BoxGeometry(250, 210, 1);
+const plateMat = new THREE.MeshStandardMaterial({ color: 0x2a2a4a, transparent: true, opacity: 0.5 });
+const plate = new THREE.Mesh(plateGeo, plateMat);
+plate.rotation.x = -Math.PI / 2;
+plate.position.y = -0.5;
+scene.add(plate);
+
+let modelMesh = null;
+let layerLines = [];
+
+function clearModel() {
+  if (modelMesh) { scene.remove(modelMesh); modelMesh = null; }
+  clearLayers();
+}
+
+function clearLayers() {
+  layerLines.forEach(l => scene.remove(l));
+  layerLines = [];
+}
+
+// Called from Dart with base64-encoded STL bytes
+window.loadSTL = function(base64) {
+  clearModel();
+  document.getElementById('info').textContent = 'Loading model…';
+
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+  const loader = new THREE.STLLoader();
+  const geometry = loader.parse(bytes.buffer);
+  geometry.computeVertexNormals();
+  geometry.center();
+
+  const material = new THREE.MeshStandardMaterial({
+    color: 0xE85D04,
+    roughness: 0.6,
+    metalness: 0.1,
+  });
+  modelMesh = new THREE.Mesh(geometry, material);
+  modelMesh.castShadow = true;
+  modelMesh.receiveShadow = true;
+  scene.add(modelMesh);
+
+  // Fit camera
+  const box = new THREE.Box3().setFromObject(modelMesh);
+  const size = box.getSize(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z);
+  camera.position.set(maxDim, maxDim * 0.8, maxDim * 1.2);
+  controls.target.copy(box.getCenter(new THREE.Vector3()));
+  controls.update();
+
+  document.getElementById('info').textContent =
+    `${(bytes.length / 1024).toFixed(0)} KB | ${geometry.index ? geometry.index.count / 3 : geometry.attributes.position.count / 3} triangles`;
+
+  if (window.flutter_inappwebview) {
+    window.flutter_inappwebview.callHandler('onModelLoaded', {
+      triangleCount: geometry.index ? geometry.index.count / 3 : geometry.attributes.position.count / 3
+    });
+  }
+};
+
+// Show a specific layer's toolpath
+window.showLayer = function(layerIndex, layerData) {
+  clearLayers();
+  if (modelMesh) { modelMesh.visible = false; }
+
+  const colorMap = {
+    perimeter: 0x4fc3f7,
+    infill: 0x888888,
+    support: 0xffb300,
+    travel: 0xff4444,
+  };
+
+  function addLines(lineArrays, color, z) {
+    lineArrays.forEach(pts => {
+      if (pts.length < 2) return;
+      const positions = [];
+      pts.forEach(p => positions.push(p[0], p[1], z));
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      const mat = new THREE.LineBasicMaterial({ color });
+      const line = new THREE.Line(geo, mat);
+      scene.add(line);
+      layerLines.push(line);
+    });
+  }
+
+  const z = layerData.z_height || 0;
+  addLines(layerData.perimeter_lines || [], colorMap.perimeter, z);
+  addLines(layerData.infill_lines || [], colorMap.infill, z);
+  addLines(layerData.support_lines || [], colorMap.support, z);
+  addLines(layerData.travel_lines || [], colorMap.travel, z);
+
+  document.getElementById('info').textContent = `Layer ${layerIndex} | Z: ${z.toFixed(2)} mm`;
+};
+
+window.show3D = function() {
+  clearLayers();
+  if (modelMesh) { modelMesh.visible = true; }
+  document.getElementById('info').textContent = '3D view';
+};
+
+// Animate
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>

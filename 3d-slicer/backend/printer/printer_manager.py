@@ -1,0 +1,80 @@
+"""Routes connections to the appropriate printer driver."""
+from enum import Enum
+from typing import Optional, Union
+
+from pydantic import BaseModel
+
+from printer.prusalink_driver import PrusaLinkDriver, PrinterStatus, PrinterState
+
+
+class ConnectionType(str, Enum):
+    PRUSALINK = "prusalink"
+    PRUSA_CONNECT = "prusa_connect"
+    OCTOPRINT = "octoprint"
+    SERIAL = "serial"
+
+
+class ConnectionConfig(BaseModel):
+    type: ConnectionType
+    host: Optional[str] = None
+    api_key: Optional[str] = None
+    port: Optional[str] = None
+    baud_rate: int = 115200
+
+
+class PrinterManager:
+    def __init__(self):
+        self._driver: Optional[PrusaLinkDriver] = None
+        self._config: Optional[ConnectionConfig] = None
+
+    async def connect(self, config: ConnectionConfig) -> bool:
+        await self.disconnect()
+        self._config = config
+
+        if config.type == ConnectionType.PRUSALINK:
+            if not config.host or not config.api_key:
+                return False
+            self._driver = PrusaLinkDriver(config.host, config.api_key)
+            return await self._driver.connect()
+
+        # Other drivers (OctoPrint, serial) can be added here following the same pattern
+        return False
+
+    async def disconnect(self) -> None:
+        if self._driver:
+            await self._driver.disconnect()
+            self._driver = None
+        self._config = None
+
+    @property
+    def is_connected(self) -> bool:
+        return self._driver is not None
+
+    async def get_status(self) -> PrinterStatus:
+        if not self._driver:
+            return PrinterStatus()
+        return await self._driver.get_status()
+
+    async def upload_and_print(self, gcode_path: str, filename: str) -> bool:
+        if not self._driver:
+            return False
+        if not await self._driver.upload_gcode(gcode_path, filename):
+            return False
+        return await self._driver.start_print(filename)
+
+    async def pause(self) -> bool:
+        return await self._driver.pause() if self._driver else False
+
+    async def resume(self) -> bool:
+        return await self._driver.resume() if self._driver else False
+
+    async def cancel(self) -> bool:
+        return await self._driver.cancel() if self._driver else False
+
+    async def send_gcode(self, command: str) -> bool:
+        return await self._driver.send_gcode(command) if self._driver else False
+
+    def get_camera_url(self) -> Optional[str]:
+        if isinstance(self._driver, PrusaLinkDriver):
+            return self._driver.get_camera_url()
+        return None

@@ -1,0 +1,10 @@
+{
+  "material_print_temperature": 210,
+  "material_print_temperature_layer_0": 215,
+  "material_bed_temperature": 60,
+  "material_bed_temperature_layer_0": 65,
+  "layer_height": 0.1,
+  "infill_sparse_density": 20,
+  "speed_print": 40,
+  "wall_line_count": 4
+}
