@@ -1,6 +1,11 @@
 # CuraEngine binary (AGPL - download via scripts/download_curaengine.sh)
 backend/slicer/cura_engine/
 
+# Three.js assets (downloaded via scripts/setup_dev.sh - MIT license, ~1MB)
+frontend/assets/viewer/three.min.js
+frontend/assets/viewer/STLLoader.js
+frontend/assets/viewer/OrbitControls.js
+
 # Python
 backend/.venv/
 backend/__pycache__/
