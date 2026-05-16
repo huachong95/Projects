@@ -1,0 +1,29 @@
+# CuraEngine binary (AGPL - download via scripts/download_curaengine.sh)
+backend/slicer/cura_engine/
+
+# Python
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/data/
+
+# Firebase credentials (never commit)
+backend/firebase_credentials.json
+backend/.env
+
+# AI model weights (download separately)
+backend/monitoring/models/*.onnx
+backend/monitoring/models/*.pt
+
+# Flutter
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/build/
+frontend/pubspec.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
