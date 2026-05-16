@@ -39,13 +39,8 @@ dependencies:
   # Media
   video_player: ^2.8.7
 
-  # Forms
-  flutter_form_builder: ^9.3.0
-  form_builder_validators: ^10.0.1
-
   # Utilities
   shared_preferences: ^2.2.3
-  intl: ^0.20.0
   uuid: ^4.3.3
 
 dev_dependencies:
