@@ -45,26 +45,29 @@ cd /d "%ROOT%\frontend"
 where flutter >nul 2>&1
 IF %ERRORLEVEL% EQU 0 (
   IF NOT EXIST "windows" (
-    flutter create --platforms=windows,ios . --project-name slicer_app
+    flutter create --platforms=windows . --project-name slicer_app
     echo    Flutter platform directories created.
   )
   flutter pub get
   echo    Flutter dependencies installed.
 ) ELSE (
   echo    Flutter not found. Install from https://flutter.dev/docs/get-started/install
-  echo    Then run: flutter create --platforms=windows,ios . ^&^& flutter pub get
+  echo    Then run: flutter create --platforms=windows . ^&^& flutter pub get
 )
 
 echo.
 echo === Setup complete ===
 echo.
-echo To start the backend:
-echo   cd backend ^&^& .venv\Scripts\activate ^&^& python main.py
+echo To start the backend (run each line separately in PowerShell):
+echo   cd backend
+echo   .venv\Scripts\activate
+echo   python main.py
 echo.
 echo To start the Flutter app:
-echo   cd frontend ^&^& flutter run -d windows
+echo   cd frontend
+echo   flutter run -d windows
 echo.
-echo Definition files are downloaded automatically by this script.
+echo Definition files are already in the repository.
 echo CuraEngine binary is downloaded automatically by this script.
 
 pause
