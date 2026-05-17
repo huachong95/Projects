@@ -13,7 +13,5 @@ curl -L -o "%DEST_DIR%\CuraEngine.exe" "%BINARY_URL%"
 
 echo CuraEngine downloaded to %DEST_DIR%\CuraEngine.exe
 echo.
-echo NOTE: You also need the printer definition files.
-echo Download fdmprinter.def.json and fdmextruder.def.json from:
-echo   https://github.com/Ultimaker/Cura/tree/%CURA_VERSION%/resources/definitions
-echo and place them in: backend\slicer\cura_profiles\definitions\
+echo Printer definition files (fdmprinter.def.json, fdmextruder.def.json)
+echo are already included in the repository -- no separate download needed.

@@ -50,16 +50,23 @@ echo ""
 echo "5. Setting up Flutter app..."
 cd "$ROOT_DIR/frontend"
 if command -v flutter &> /dev/null; then
-  # Generate platform directories if they don't exist
-  if [ ! -d "windows" ]; then
-    flutter create --platforms=windows,ios . --project-name slicer_app
+  # Generate platform directories if they don't exist.
+  # Pick the right platform for the host OS — flutter create fails if asked
+  # for a platform it cannot build on the current machine (e.g. windows on
+  # Linux, ios on Linux/Windows).
+  if [ ! -d "windows" ] && [ ! -d "linux" ] && [ ! -d "macos" ]; then
+    case "$(uname -s)" in
+      Darwin*) flutter create --platforms=macos . --project-name slicer_app ;;
+      Linux*)  flutter create --platforms=linux  . --project-name slicer_app ;;
+      *)       flutter create --platforms=windows . --project-name slicer_app ;;
+    esac
     echo "   Flutter platform directories created."
   fi
   flutter pub get
   echo "   Flutter dependencies installed."
 else
   echo "   Flutter not found. Install from https://flutter.dev/docs/get-started/install"
-  echo "   Then run: cd frontend && flutter create --platforms=windows,ios . && flutter pub get"
+  echo "   Then run: cd frontend && flutter pub get"
 fi
 
 echo ""

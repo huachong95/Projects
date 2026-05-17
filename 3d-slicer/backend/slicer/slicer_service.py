@@ -124,6 +124,14 @@ class SlicerService:
                 "Run scripts/download_definitions.bat to download it."
             )
             return
+        if machine_def.stat().st_size < 10_000:
+            job.state = SliceState.FAILED
+            job.error = (
+                f"CuraEngine definition at {machine_def} is a placeholder stub "
+                f"({machine_def.stat().st_size} bytes). "
+                "Run scripts/download_definitions.bat to replace it with the real file."
+            )
+            return
 
         merged = {
             **_PRUSA_MK4_DEFAULTS,
