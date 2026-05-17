@@ -2,7 +2,7 @@
 import asyncio
 import json
 import logging
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Optional
 
@@ -44,7 +44,6 @@ class NotificationService:
 
     def _save(self) -> None:
         self._path.parent.mkdir(parents=True, exist_ok=True)
-        from dataclasses import asdict
         self._path.write_text(json.dumps([asdict(c) for c in self._channels], indent=2))
 
     def list_channels(self) -> list[NotificationChannel]:
@@ -158,7 +157,6 @@ class NotificationService:
         if not ch:
             return False
         try:
-            await self.notify.__wrapped__ if hasattr(self.notify, '__wrapped__') else None
             async with httpx.AsyncClient(timeout=10) as client:
                 await self._dispatch(ch, "print_complete",
                                      "🎉 Test notification from 3D Slicer app", None)

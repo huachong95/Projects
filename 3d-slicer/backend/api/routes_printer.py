@@ -19,7 +19,7 @@ def init(printer_manager: PrinterManager, slicer_service: SlicerService) -> None
 
 
 def _require_printer() -> PrinterManager:
-    if not _printer.is_connected:
+    if not _printer or not _printer.is_connected:
         raise HTTPException(503, "Printer not connected")
     return _printer
 
@@ -129,8 +129,10 @@ async def cancel():
 
 @router.post("/gcode")
 async def send_gcode(cmd: GcodeCommand):
-    _require_printer()
-    await _printer.send_gcode(cmd.command)
+    printer = _require_printer()
+    ok = await printer.send_gcode(cmd.command)
+    if not ok:
+        raise HTTPException(503, "G-code command rejected by printer")
     return {"status": "sent"}
 
 

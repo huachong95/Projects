@@ -57,9 +57,10 @@ class _SliceSettingsScreenState extends State<SliceSettingsScreen>
     _progressSub = wsClient.stream('slice_progress').listen((msg) {
       if (!mounted) return;
       if (msg['type'] == 'progress' && _slicing) {
-        setState(() => _sliceProgress = (msg['data']['percent'] as num).toDouble());
+        setState(() => _sliceProgress =
+            (msg['data']?['percent'] as num?)?.toDouble() ?? _sliceProgress);
       } else if (msg['type'] == 'complete' && _slicing) {
-        _onSliceComplete(msg['data']['slice_job_id'] as String?);
+        _onSliceComplete(msg['data']?['slice_job_id'] as String?);
       }
     });
   }
