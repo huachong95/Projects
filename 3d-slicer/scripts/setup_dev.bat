@@ -16,13 +16,17 @@ echo    Backend dependencies installed.
 
 REM Three.js viewer assets
 echo.
-echo 2. Downloading Three.js viewer assets...
+echo 2. Refreshing Three.js viewer assets (r128)...
+REM Already vendored in the repo. r128 is REQUIRED: the viewer loads these
+REM via plain script tags and uses the global THREE.STLLoader /
+REM THREE.OrbitControls namespace, which only exists in examples/js/ up to
+REM ~r147; r148+ is ES-module-only and would break the viewer.
 SET VIEWER_DIR=%ROOT%\frontend\assets\viewer
 IF NOT EXIST "%VIEWER_DIR%" mkdir "%VIEWER_DIR%"
-curl -fL -o "%VIEWER_DIR%\three.min.js" "https://cdnjs.cloudflare.com/ajax/libs/three.js/r160/three.min.js"
-curl -fL -o "%VIEWER_DIR%\STLLoader.js" "https://raw.githubusercontent.com/mrdoob/three.js/r160/examples/js/loaders/STLLoader.js"
-curl -fL -o "%VIEWER_DIR%\OrbitControls.js" "https://raw.githubusercontent.com/mrdoob/three.js/r160/examples/js/controls/OrbitControls.js"
-echo    Three.js assets downloaded.
+curl -fL -o "%VIEWER_DIR%\three.min.js" "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+curl -fL -o "%VIEWER_DIR%\STLLoader.js" "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"
+curl -fL -o "%VIEWER_DIR%\OrbitControls.js" "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"
+echo    Three.js assets refreshed.
 
 REM CuraEngine
 echo.

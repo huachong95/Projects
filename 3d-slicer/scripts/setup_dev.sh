@@ -17,18 +17,23 @@ pip install -r requirements.txt
 echo "   Backend dependencies installed."
 
 # Three.js viewer assets
+# NOTE: these are already vendored in the repo (committed, not gitignored).
+# This step only refreshes them. r128 is REQUIRED: three_viewer.html loads
+# the libraries via plain <script> tags and uses the global THREE.STLLoader
+# / THREE.OrbitControls namespace. That non-module build only exists in
+# examples/js/ up to ~r147; r148+ moved to ES-module examples/jsm/ which
+# does not attach to the global THREE and would break the viewer.
 echo ""
-echo "2. Downloading Three.js viewer assets..."
+echo "2. Refreshing Three.js viewer assets (r128)..."
 VIEWER_DIR="$ROOT_DIR/frontend/assets/viewer"
 mkdir -p "$VIEWER_DIR"
-THREE_VERSION="r160"
 curl -fL -o "$VIEWER_DIR/three.min.js" \
-  "https://cdnjs.cloudflare.com/ajax/libs/three.js/${THREE_VERSION}/three.min.js"
+  "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
 curl -fL -o "$VIEWER_DIR/STLLoader.js" \
-  "https://raw.githubusercontent.com/mrdoob/three.js/${THREE_VERSION}/examples/js/loaders/STLLoader.js"
+  "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"
 curl -fL -o "$VIEWER_DIR/OrbitControls.js" \
-  "https://raw.githubusercontent.com/mrdoob/three.js/${THREE_VERSION}/examples/js/controls/OrbitControls.js"
-echo "   Three.js assets downloaded."
+  "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"
+echo "   Three.js assets refreshed."
 
 # CuraEngine
 echo ""
