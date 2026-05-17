@@ -39,9 +39,9 @@ class MeshService:
             try:
                 trimesh.repair.fix_normals(mesh)
                 trimesh.repair.fill_holes(mesh)
+                was_repaired = True
             except Exception:
                 pass
-            was_repaired = True
 
         stl_path = job_dir / "model.stl"
         mesh.export(str(stl_path))

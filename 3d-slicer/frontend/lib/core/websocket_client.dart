@@ -22,7 +22,8 @@ class WebSocketClient {
   void _connect(String channel) {
     final wsUrl = apiClient.baseUrl
         .replaceFirst('http://', 'ws://')
-        .replaceFirst('https://', 'wss://');
+        .replaceFirst('https://', 'wss://')
+        .replaceAll(RegExp(r'/+$'), '');
     final uri = Uri.parse('$wsUrl/ws/$channel');
 
     try {

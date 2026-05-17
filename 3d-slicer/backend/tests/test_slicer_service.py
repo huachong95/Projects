@@ -241,3 +241,30 @@ def test_build_cmd_stl_and_output_at_end(slicer, machine_def, tmp_path):
 
 def test_get_job_returns_none_for_unknown(slicer):
     assert slicer.get_job("no-such-id") is None
+
+
+# ---------------------------------------------------------------------------
+# start_slice — task reference and exception surfacing
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_start_slice_returns_job_immediately(slicer, machine_def, tmp_path):
+    """start_slice must return a SliceJob synchronously without waiting for CuraEngine."""
+    stl = tmp_path / "model.stl"
+    stl.write_bytes(b"solid\nendsolid\n")
+    job = await slicer.start_slice(stl, "mesh-1", SliceSettings())
+    assert job.slice_job_id
+    assert job.state == SliceState.PENDING or job.state == SliceState.RUNNING
+
+
+@pytest.mark.asyncio
+async def test_start_slice_fails_gracefully_when_cura_missing(slicer, machine_def, tmp_path):
+    """When CuraEngine binary is absent the job must transition to FAILED, not raise."""
+    import asyncio
+    stl = tmp_path / "model.stl"
+    stl.write_bytes(b"solid\nendsolid\n")
+    job = await slicer.start_slice(stl, "mesh-1", SliceSettings())
+    # Give the background task a moment to run and fail.
+    await asyncio.sleep(0.1)
+    assert job.state == SliceState.FAILED
+    assert job.error

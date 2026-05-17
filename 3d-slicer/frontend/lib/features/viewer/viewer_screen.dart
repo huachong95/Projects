@@ -54,13 +54,14 @@ class _ViewerScreenState extends State<ViewerScreen> {
       handlerName: 'onModelLoaded',
       callback: (_) => setState(() => _modelLoaded = true),
     );
-    _loadModel();
+    // Do NOT call _loadModel() here — the HTML page hasn't loaded yet.
+    // onLoadStop fires once the page is ready and window.loadSTL exists.
   }
 
   Future<void> _loadModel() async {
     try {
       final resp = await apiClient.getBytes('/api/mesh/${widget.jobId}/download');
-      if (resp.data == null) return;
+      if (!mounted || resp.data == null) return;
       final b64 = base64Encode(Uint8List.fromList(resp.data!));
       await _webViewController?.evaluateJavascript(source: "window.loadSTL('$b64')");
     } catch (_) {}
@@ -153,6 +154,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
                 InAppWebView(
                   initialFile: 'assets/viewer/three_viewer.html',
                   onWebViewCreated: _onWebViewCreated,
+                  onLoadStop: (_, __) => _loadModel(),
                   initialSettings: InAppWebViewSettings(
                     transparentBackground: true,
                     allowFileAccessFromFileURLs: true,
@@ -166,7 +168,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
           ),
           if (_sliceMeta != null)
             _MetaBar(meta: _sliceMeta!),
-          if (_layerMode && _totalLayers > 0)
+          if (_layerMode && _totalLayers > 1)
             _LayerSlider(
               currentLayer: _currentLayer,
               totalLayers: _totalLayers,

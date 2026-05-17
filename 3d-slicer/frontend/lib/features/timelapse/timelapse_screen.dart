@@ -105,7 +105,7 @@ class _TimelapseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasVideo = job['has_video'] as bool? ?? false;
     final frameCount = job['frame_count'] as int? ?? 0;
-    final sizeMb = job['video_size_mb'] as double? ?? 0.0;
+    final sizeMb = (job['video_size_mb'] as num?)?.toDouble() ?? 0.0;
     final jobId = job['job_id'] as String? ?? '';
 
     return Card(

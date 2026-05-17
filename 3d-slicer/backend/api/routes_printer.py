@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from printer.printer_manager import ConnectionConfig, PrinterManager
 from printer.prusalink_driver import discover_prusalink
-from slicer.slicer_service import SlicerService
+from slicer.slicer_service import SlicerService, SliceState
 
 router = APIRouter()
 _printer: Optional[PrinterManager] = None
@@ -61,6 +61,8 @@ async def start_print(req: PrintRequest):
     job = _slicer.get_job(req.slice_job_id)
     if not job:
         raise HTTPException(404, "Slice job not found")
+    if job.state != SliceState.COMPLETE or not job.processed_gcode_path:
+        raise HTTPException(422, "Slice job is not complete")
     success = await _printer.upload_and_print(job.processed_gcode_path, req.filename)
     if not success:
         raise HTTPException(503, "Failed to start print")

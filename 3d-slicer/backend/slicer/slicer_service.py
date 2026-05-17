@@ -95,9 +95,10 @@ class SlicerService:
         job = SliceJob(slice_job_id=slice_job_id, mesh_job_id=mesh_job_id)
         self._jobs[slice_job_id] = job
 
-        asyncio.create_task(
+        task = asyncio.create_task(
             self._run_slice(job, stl_path, settings, progress_callback, completion_callback, timelapse_hooks)
         )
+        task.add_done_callback(lambda t: t.exception() if not t.cancelled() else None)
         return job
 
     async def _run_slice(

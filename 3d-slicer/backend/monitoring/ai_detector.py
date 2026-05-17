@@ -99,7 +99,7 @@ class AIMonitor:
             if frame is None:
                 continue
 
-            result = await asyncio.get_event_loop().run_in_executor(
+            result = await asyncio.get_running_loop().run_in_executor(
                 None, self.detector.analyze_frame, frame
             )
             await on_detection(result)
