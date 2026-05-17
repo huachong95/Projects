@@ -61,3 +61,23 @@ def test_extract_layer_data_perimeters(tmp_path):
     layer = extract_layer_data(p, 0)
     assert layer is not None
     assert layer.layer_index == 0
+
+
+def test_extract_layer_data_z_height_layer0(tmp_path):
+    """z_height must reflect the G1 Z move, not 0.0 from creation time."""
+    p = _write_gcode(tmp_path, SAMPLE_GCODE)
+    layer = extract_layer_data(p, 0)
+    assert layer is not None
+    assert abs(layer.z_height - 0.2) < 1e-6
+
+
+def test_extract_layer_data_z_height_layer1(tmp_path):
+    p = _write_gcode(tmp_path, SAMPLE_GCODE)
+    layer = extract_layer_data(p, 1)
+    assert layer is not None
+    assert abs(layer.z_height - 0.4) < 1e-6
+
+
+def test_extract_layer_data_missing_layer_returns_none(tmp_path):
+    p = _write_gcode(tmp_path, SAMPLE_GCODE)
+    assert extract_layer_data(p, 99) is None

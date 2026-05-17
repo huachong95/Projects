@@ -90,12 +90,14 @@ class PrusaLinkDriver:
         if not self._client:
             return False
         try:
-            with open(gcode_path, "rb") as f:
-                resp = await self._client.put(
-                    f"/api/v1/files/usb/{filename}",
-                    content=f.read(),
-                    headers={**self.headers, "Content-Type": "text/x.gcode"},
-                )
+            import aiofiles
+            async with aiofiles.open(gcode_path, "rb") as f:
+                content = await f.read()
+            resp = await self._client.put(
+                f"/api/v1/files/usb/{filename}",
+                content=content,
+                headers={**self.headers, "Content-Type": "text/x.gcode"},
+            )
             return resp.status_code in (200, 201)
         except (httpx.RequestError, OSError):
             return False

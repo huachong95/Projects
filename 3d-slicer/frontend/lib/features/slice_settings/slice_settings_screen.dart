@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -21,12 +23,22 @@ class _SliceSettingsScreenState extends State<SliceSettingsScreen> {
   double _sliceProgress = 0.0;
   String? _sliceJobId;
   String? _errorMsg;
+  StreamSubscription? _progressSub;
+  Timer? _pollTimer;
+  bool _navigating = false;
 
   @override
   void initState() {
     super.initState();
     _loadProfiles();
     _listenToProgress();
+  }
+
+  @override
+  void dispose() {
+    _progressSub?.cancel();
+    _pollTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadProfiles() async {
@@ -38,21 +50,49 @@ class _SliceSettingsScreenState extends State<SliceSettingsScreen> {
   }
 
   void _listenToProgress() {
-    wsClient.stream('slice_progress').listen((msg) {
+    _progressSub = wsClient.stream('slice_progress').listen((msg) {
       if (!mounted) return;
       if (msg['type'] == 'progress') {
         setState(() => _sliceProgress = (msg['data']['percent'] as num).toDouble());
       } else if (msg['type'] == 'complete') {
-        setState(() {
-          _slicing = false;
-          _sliceProgress = 100.0;
-        });
-        final id = msg['data']['slice_job_id'] as String?;
-        if (id != null && mounted) {
-          context.go('/viewer/${widget.jobId}?sliceJobId=$id');
-        }
+        _onSliceComplete(msg['data']['slice_job_id'] as String?);
       }
     });
+  }
+
+  void _startPollTimer() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+      if (!_slicing || _sliceJobId == null) {
+        _pollTimer?.cancel();
+        return;
+      }
+      try {
+        final resp = await apiClient.get<Map<String, dynamic>>('/api/slice/$_sliceJobId/status');
+        final state = resp.data?['state'] as String?;
+        if (state == 'complete') {
+          _onSliceComplete(_sliceJobId);
+        } else if (state == 'failed') {
+          _pollTimer?.cancel();
+          if (mounted) {
+            setState(() {
+              _slicing = false;
+              _errorMsg = resp.data?['error'] as String? ?? 'Slicing failed';
+            });
+          }
+        }
+      } catch (_) {}
+    });
+  }
+
+  void _onSliceComplete(String? id) {
+    if (_navigating) return;
+    _navigating = true;
+    _pollTimer?.cancel();
+    if (mounted) setState(() { _slicing = false; _sliceProgress = 100.0; });
+    if (id != null && mounted) {
+      context.go('/viewer/${widget.jobId}?sliceJobId=$id');
+    }
   }
 
   Future<void> _startSlice() async {
@@ -60,6 +100,7 @@ class _SliceSettingsScreenState extends State<SliceSettingsScreen> {
       _slicing = true;
       _sliceProgress = 0.0;
       _errorMsg = null;
+      _navigating = false;
     });
     try {
       final resp = await apiClient.post<Map<String, dynamic>>(
@@ -74,6 +115,7 @@ class _SliceSettingsScreenState extends State<SliceSettingsScreen> {
         },
       );
       setState(() => _sliceJobId = resp.data?['slice_job_id']);
+      _startPollTimer();
     } catch (e) {
       setState(() {
         _slicing = false;

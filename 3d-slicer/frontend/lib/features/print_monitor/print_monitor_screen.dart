@@ -52,7 +52,7 @@ class _PrintMonitorScreenState extends State<PrintMonitorScreen> {
   void _startCameraPolling() {
     _cameraTimer = Timer.periodic(const Duration(milliseconds: 250), (_) async {
       try {
-        final resp = await apiClient.get<List<int>>('/api/monitoring/camera/snapshot');
+        final resp = await apiClient.getBytes('/api/monitoring/camera/snapshot');
         if (resp.statusCode == 200 && resp.data != null && mounted) {
           setState(() => _cameraFrame = Uint8List.fromList(resp.data!));
         }

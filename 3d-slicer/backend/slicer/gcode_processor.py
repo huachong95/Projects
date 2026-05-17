@@ -122,6 +122,11 @@ def extract_layer_data(gcode_path: Path, layer_index: int) -> Optional[LayerData
 
                     if nz != current_z:
                         current_z = nz
+                        # Update z_height to the actual Z seen in this layer's moves.
+                        # The ;LAYER: comment appears before the G1 Z move, so z_height
+                        # is always 0.0 at LayerData creation time — fix it here.
+                        if layer_data is not None:
+                            layer_data.z_height = nz
                     if has_e:
                         if not current_line:
                             current_line.append((current_x, current_y))
