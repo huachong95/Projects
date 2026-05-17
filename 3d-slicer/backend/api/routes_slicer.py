@@ -34,11 +34,18 @@ async def start_slice(req: StartSliceRequest):
     async def on_progress(pct: float):
         await ws_manager.broadcast("slice_progress", "progress", {"percent": pct})
 
+    async def on_complete(finished_job: SliceJob):
+        await ws_manager.broadcast("slice_progress", "complete", {
+            "slice_job_id": finished_job.slice_job_id,
+            "layer_count": finished_job.metadata.layer_count if finished_job.metadata else 0,
+        })
+
     job = await _slicer.start_slice(
         stl_path=stl_path,
         mesh_job_id=req.mesh_job_id,
         settings=req.settings,
         progress_callback=on_progress,
+        completion_callback=on_complete,
         timelapse_hooks=req.timelapse_hooks,
     )
     return job

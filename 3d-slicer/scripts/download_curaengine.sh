@@ -5,7 +5,7 @@
 set -euo pipefail
 
 CURA_VERSION="5.7.2"
-DEST_DIR="$(dirname "$0")/../backend/slicer/cura_engine/linux"
+DEST_DIR="$(dirname "$0")/../backend/slicer/cura_engine"
 BINARY_URL="https://github.com/Ultimaker/CuraEngine/releases/download/${CURA_VERSION}/CuraEngine-${CURA_VERSION}-Linux-X64.AppImage"
 
 mkdir -p "$DEST_DIR"

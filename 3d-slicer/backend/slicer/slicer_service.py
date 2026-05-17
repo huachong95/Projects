@@ -75,6 +75,7 @@ class SlicerService:
         mesh_job_id: str,
         settings: SliceSettings,
         progress_callback: Optional[Callable[[float], None]] = None,
+        completion_callback: Optional[Callable[["SliceJob"], None]] = None,
         timelapse_hooks: bool = True,
     ) -> SliceJob:
         slice_job_id = str(uuid.uuid4())
@@ -82,7 +83,7 @@ class SlicerService:
         self._jobs[slice_job_id] = job
 
         asyncio.create_task(
-            self._run_slice(job, stl_path, settings, progress_callback, timelapse_hooks)
+            self._run_slice(job, stl_path, settings, progress_callback, completion_callback, timelapse_hooks)
         )
         return job
 
@@ -92,6 +93,7 @@ class SlicerService:
         stl_path: Path,
         settings: SliceSettings,
         progress_callback: Optional[Callable[[float], None]],
+        completion_callback: Optional[Callable[["SliceJob"], None]],
         timelapse_hooks: bool,
     ) -> None:
         job.state = SliceState.RUNNING
@@ -151,6 +153,9 @@ class SlicerService:
             job.metadata = extract_metadata(final_gcode)
             job.state = SliceState.COMPLETE
             job.progress_percent = 100.0
+
+            if completion_callback:
+                await completion_callback(job)
 
         except FileNotFoundError:
             job.state = SliceState.FAILED

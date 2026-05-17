@@ -55,7 +55,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
 
   Future<void> _loadModel() async {
     try {
-      final resp = await apiClient.get<List<int>>('/api/mesh/${widget.jobId}/download');
+      final resp = await apiClient.getBytes('/api/mesh/${widget.jobId}/download');
       if (resp.data == null) return;
       final b64 = base64Encode(Uint8List.fromList(resp.data!));
       await _webViewController?.evaluateJavascript(source: "window.loadSTL('$b64')");

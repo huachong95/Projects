@@ -34,6 +34,9 @@ class ApiClient {
   Future<Response<T>> get<T>(String path, {Map<String, dynamic>? params}) =>
       _dio.get(path, queryParameters: params);
 
+  Future<Response<List<int>>> getBytes(String path) =>
+      _dio.get(path, options: Options(responseType: ResponseType.bytes));
+
   Future<Response<T>> post<T>(String path, {dynamic data}) =>
       _dio.post(path, data: data);
 

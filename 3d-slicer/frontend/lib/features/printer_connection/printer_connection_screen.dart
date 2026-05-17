@@ -216,7 +216,7 @@ class _StatusCard extends StatelessWidget {
     return Card(
       color: connected
           ? Colors.green.shade900.withOpacity(0.4)
-          : Theme.of(context).colorScheme.surfaceVariant,
+          : Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(

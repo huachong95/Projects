@@ -141,6 +141,18 @@ async def disable_ai():
     return {"status": "disabled"}
 
 
+@app.get("/api/monitoring/ai/status")
+async def ai_status():
+    frame = camera_stream.get_latest_frame()
+    result = failure_detector.analyze_frame(frame) if frame else None
+    return {
+        "enabled": ai_monitor._enabled,
+        "model_ready": failure_detector.is_available,
+        "failure_probability": result.failure_probability if result else 0.0,
+        "is_alert": result.is_alert if result else False,
+    }
+
+
 @app.get("/api/timelapse")
 async def list_timelapses():
     return {"jobs": timelapse_service.list_jobs()}

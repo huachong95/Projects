@@ -1,8 +1,11 @@
+import sys
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 BASE_DIR = Path(__file__).parent
+
+_CURA_EXE = "CuraEngine.exe" if sys.platform == "win32" else "CuraEngine"
 
 
 class Settings(BaseSettings):
@@ -16,7 +19,7 @@ class Settings(BaseSettings):
     frames_dir: Path = BASE_DIR / "data" / "timelapses"
     gcode_dir: Path = BASE_DIR / "data" / "gcode"
 
-    cura_engine_path: Path = BASE_DIR / "slicer" / "cura_engine" / "CuraEngine"
+    cura_engine_path: Path = BASE_DIR / "slicer" / "cura_engine" / _CURA_EXE
     cura_definitions_dir: Path = BASE_DIR / "slicer" / "cura_profiles" / "definitions"
     cura_profiles_dir: Path = BASE_DIR / "slicer" / "cura_profiles"
 
