@@ -50,7 +50,7 @@ class _PrintMonitorScreenState extends State<PrintMonitorScreen> {
   }
 
   void _startCameraPolling() {
-    _cameraTimer = Timer.periodic(const Duration(milliseconds: 250), (_) async {
+    _cameraTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
       try {
         final resp = await apiClient.getBytes('/api/monitoring/camera/snapshot');
         if (resp.statusCode == 200 && resp.data != null && mounted) {
@@ -110,7 +110,7 @@ class _PrintMonitorScreenState extends State<PrintMonitorScreen> {
                     children: [
                       _StatusChip(state),
                       const SizedBox(width: 8),
-                      if (layer != null && totalLayers != null)
+                      if (layer != null && layer > 0 && totalLayers != null && totalLayers > 0)
                         Text('Layer $layer / $totalLayers'),
                     ],
                   ),
@@ -135,12 +135,12 @@ class _PrintMonitorScreenState extends State<PrintMonitorScreen> {
                       OutlinedButton.icon(
                         icon: const Icon(Icons.pause),
                         label: const Text('Pause'),
-                        onPressed: () => apiClient.post('/api/printer/pause'),
+                        onPressed: () => _sendCommand('/api/printer/pause', 'Paused'),
                       ),
                       OutlinedButton.icon(
                         icon: const Icon(Icons.play_arrow),
                         label: const Text('Resume'),
-                        onPressed: () => apiClient.post('/api/printer/resume'),
+                        onPressed: () => _sendCommand('/api/printer/resume', 'Resumed'),
                       ),
                       OutlinedButton.icon(
                         icon: const Icon(Icons.stop, color: Colors.red),
@@ -156,6 +156,21 @@ class _PrintMonitorScreenState extends State<PrintMonitorScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _sendCommand(String path, String successMsg) async {
+    try {
+      await apiClient.post(path);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMsg)));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Command failed: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _confirmCancel(BuildContext context) async {

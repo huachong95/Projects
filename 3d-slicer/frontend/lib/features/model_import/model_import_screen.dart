@@ -52,7 +52,7 @@ class _ModelImportScreenState extends State<ModelImportScreen> {
       );
       setState(() => _meshInfo = resp.data);
     } on DioException catch (e) {
-      setState(() => _errorMsg = e.response?.data?.toString() ?? e.message);
+      setState(() => _errorMsg = e.response?.data?.toString() ?? e.message ?? 'Upload failed');
     } finally {
       setState(() => _loading = false);
     }

@@ -67,8 +67,10 @@ async def get_slice_status(slice_job_id: str):
 @router.get("/{slice_job_id}/gcode")
 async def download_gcode(slice_job_id: str):
     job = _slicer.get_job(slice_job_id)
-    if not job or job.state != SliceState.COMPLETE:
-        raise HTTPException(404, "Slice job not complete")
+    if not job:
+        raise HTTPException(404, "Slice job not found")
+    if job.state != SliceState.COMPLETE:
+        raise HTTPException(422, "Slice job is not complete yet")
     gcode_path = Path(job.processed_gcode_path)
     if not gcode_path.exists():
         raise HTTPException(404, "G-code file not found")
@@ -78,16 +80,20 @@ async def download_gcode(slice_job_id: str):
 @router.get("/{slice_job_id}/metadata")
 async def get_metadata(slice_job_id: str):
     job = _slicer.get_job(slice_job_id)
-    if not job or job.state != SliceState.COMPLETE:
-        raise HTTPException(404, "Slice job not complete")
+    if not job:
+        raise HTTPException(404, "Slice job not found")
+    if job.state != SliceState.COMPLETE:
+        raise HTTPException(422, "Slice job is not complete yet")
     return job.metadata
 
 
 @router.get("/{slice_job_id}/layer/{layer_index}")
 async def get_layer(slice_job_id: str, layer_index: int):
     job = _slicer.get_job(slice_job_id)
-    if not job or job.state != SliceState.COMPLETE:
-        raise HTTPException(404, "Slice job not complete")
+    if not job:
+        raise HTTPException(404, "Slice job not found")
+    if job.state != SliceState.COMPLETE:
+        raise HTTPException(422, "Slice job is not complete yet")
     gcode_path = Path(job.processed_gcode_path)
     layer_data = extract_layer_data(gcode_path, layer_index)
     if layer_data is None:
