@@ -73,7 +73,8 @@ async def start_print(req: PrintRequest):
 async def pause():
     if not _printer.is_connected:
         raise HTTPException(503, "Printer not connected")
-    await _printer.pause()
+    if not await _printer.pause():
+        raise HTTPException(503, "Pause command rejected by printer")
     return {"status": "paused"}
 
 
@@ -81,7 +82,8 @@ async def pause():
 async def resume():
     if not _printer.is_connected:
         raise HTTPException(503, "Printer not connected")
-    await _printer.resume()
+    if not await _printer.resume():
+        raise HTTPException(503, "Resume command rejected by printer")
     return {"status": "resumed"}
 
 
@@ -89,7 +91,8 @@ async def resume():
 async def cancel():
     if not _printer.is_connected:
         raise HTTPException(503, "Printer not connected")
-    await _printer.cancel()
+    if not await _printer.cancel():
+        raise HTTPException(503, "Cancel command rejected by printer")
     return {"status": "cancelled"}
 
 

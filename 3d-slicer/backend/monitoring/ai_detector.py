@@ -80,6 +80,8 @@ class AIMonitor:
         self._consecutive_alerts = 0
 
     async def run(self, camera_stream, on_detection, on_alert) -> None:
+        if self._task and not self._task.done():
+            return  # Already running — don't spawn a second loop
         self._task = asyncio.create_task(
             self._monitor_loop(camera_stream, on_detection, on_alert)
         )
