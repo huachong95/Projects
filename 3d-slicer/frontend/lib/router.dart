@@ -7,6 +7,9 @@ import 'features/slice_settings/slice_settings_screen.dart';
 import 'features/print_monitor/print_monitor_screen.dart';
 import 'features/timelapse/timelapse_screen.dart';
 import 'features/printer_connection/printer_connection_screen.dart';
+import 'features/print_history/print_history_screen.dart';
+import 'features/filament/filament_screen.dart';
+import 'features/notifications/notification_settings_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -24,5 +27,8 @@ final appRouter = GoRouter(
     GoRoute(path: '/monitor', builder: (_, __) => const PrintMonitorScreen()),
     GoRoute(path: '/timelapse', builder: (_, __) => const TimelapseScreen()),
     GoRoute(path: '/connect', builder: (_, __) => const PrinterConnectionScreen()),
+    GoRoute(path: '/history', builder: (_, __) => const PrintHistoryScreen()),
+    GoRoute(path: '/filament', builder: (_, __) => const FilamentScreen()),
+    GoRoute(path: '/notifications', builder: (_, __) => const NotificationSettingsScreen()),
   ],
 );

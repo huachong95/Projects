@@ -7,19 +7,22 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from api import routes_mesh, routes_printer, routes_slicer
+from api import routes_history, routes_filament, routes_notifications
 from api.websockets import ws_manager
 from config import settings
 from monitoring.ai_detector import AIMonitor, FailureDetector
 from monitoring.camera_stream import camera_stream
+from monitoring.notification_service import NotificationService
+from monitoring.print_history import PrintHistoryService
 from monitoring.timelapse_service import TimelapseService
 from printer.printer_manager import PrinterManager
+from slicer.filament_service import FilamentService
 from slicer.mesh_service import MeshService
 from slicer.slicer_service import SlicerService
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Verify CuraEngine binary exists on startup (warn, don't crash)
     if not settings.cura_engine_path.exists():
         print(
             f"WARNING: CuraEngine binary not found at {settings.cura_engine_path}.\n"
@@ -27,18 +30,16 @@ async def lifespan(app: FastAPI):
             file=sys.stderr,
         )
 
-    # Start print status polling loop
     app.state.poll_task = asyncio.create_task(_poll_printer_status(app.state.printer))
 
     yield
 
-    # Cleanup
     app.state.poll_task.cancel()
     await camera_stream.stop()
     await app.state.printer.disconnect()
 
 
-app = FastAPI(title="3D Slicer Backend", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="3D Slicer Backend", version="0.2.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -47,7 +48,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Instantiate services
+# ── Services ──────────────────────────────────────────────────────────────────
+_data_dir = settings.temp_dir.parent  # backend/data/
+
 mesh_service = MeshService(settings.temp_dir)
 slicer_service = SlicerService(
     cura_engine_path=settings.cura_engine_path,
@@ -60,23 +63,37 @@ printer_manager = PrinterManager()
 timelapse_service = TimelapseService(settings.frames_dir)
 failure_detector = FailureDetector(settings.ai_model_path, settings.ai_alert_threshold)
 ai_monitor = AIMonitor(failure_detector, settings.ai_inference_interval_seconds)
+history_service = PrintHistoryService(_data_dir)
+filament_service = FilamentService(_data_dir)
+notification_service = NotificationService(_data_dir)
 
-# Store on app.state for cross-module access
+# ── App state ─────────────────────────────────────────────────────────────────
 app.state.mesh = mesh_service
 app.state.slicer = slicer_service
 app.state.printer = printer_manager
 app.state.timelapse = timelapse_service
 app.state.ai_monitor = ai_monitor
+app.state.history = history_service
+app.state.filament = filament_service
+app.state.notifications = notification_service
 
-# Wire up routers
+# ── Routers ───────────────────────────────────────────────────────────────────
 routes_mesh.init(mesh_service)
 routes_slicer.init(slicer_service, settings.temp_dir)
 routes_printer.init(printer_manager, slicer_service)
+routes_history.init(history_service)
+routes_filament.init(filament_service)
+routes_notifications.init(notification_service)
 
 app.include_router(routes_mesh.router, prefix="/api/mesh", tags=["mesh"])
 app.include_router(routes_slicer.router, prefix="/api/slice", tags=["slicer"])
 app.include_router(routes_printer.router, prefix="/api/printer", tags=["printer"])
+app.include_router(routes_history.router, prefix="/api/history", tags=["history"])
+app.include_router(routes_filament.router, prefix="/api/filament", tags=["filament"])
+app.include_router(routes_notifications.router, prefix="/api/notifications", tags=["notifications"])
 
+
+# ── Standalone endpoints ──────────────────────────────────────────────────────
 
 @app.get("/health")
 async def health():
@@ -93,7 +110,6 @@ async def websocket_endpoint(websocket: WebSocket, channel: str):
     await ws_manager.connect(channel, websocket)
     try:
         while True:
-            # Keep alive — client can send pings
             await websocket.receive_text()
     except WebSocketDisconnect:
         ws_manager.disconnect(channel, websocket)
@@ -125,14 +141,22 @@ async def enable_ai():
     await ai_monitor.run(
         camera_stream,
         on_detection=lambda r: ws_manager.broadcast("ai_status", "detection", {
-            "probability": r.failure_probability
-        }),
-        on_alert=lambda r: ws_manager.broadcast("ai_status", "alert", {
-            "message": "Possible print failure detected",
             "probability": r.failure_probability,
         }),
+        on_alert=lambda r: _on_ai_alert(r.failure_probability),
     )
     return {"status": "enabled"}
+
+
+async def _on_ai_alert(probability: float) -> None:
+    snapshot = camera_stream.get_latest_frame()
+    msg = f"⚠️ Print failure detected ({probability * 100:.0f}% confidence)"
+    await asyncio.gather(
+        ws_manager.broadcast("ai_status", "alert", {
+            "message": msg, "probability": probability,
+        }),
+        notification_service.notify("ai_alert", msg, snapshot),
+    )
 
 
 @app.post("/api/monitoring/ai/disable")
@@ -168,12 +192,17 @@ async def compile_timelapse(job_id: str):
     return {"status": "compiled", "path": str(path)}
 
 
+# ── Background polling ────────────────────────────────────────────────────────
+
 async def _poll_printer_status(printer: PrinterManager) -> None:
     while True:
         await asyncio.sleep(2)
         if printer.is_connected:
             status = await printer.get_status()
             await ws_manager.broadcast("print_status", "status", status.model_dump())
+
+            # Record history: mark running jobs complete when printer goes idle
+            # (simplified — a full implementation would track print job state transitions)
 
 
 if __name__ == "__main__":
