@@ -35,9 +35,14 @@ echo ""
 echo "3. Downloading CuraEngine..."
 bash "$SCRIPT_DIR/download_curaengine.sh" || echo "   WARNING: CuraEngine download failed. Download manually."
 
+# Definition files
+echo ""
+echo "4. Downloading CuraEngine definition files..."
+bash "$SCRIPT_DIR/download_definitions.sh" || echo "   WARNING: Definition file download failed. Download manually."
+
 # Flutter
 echo ""
-echo "4. Setting up Flutter app..."
+echo "5. Setting up Flutter app..."
 cd "$ROOT_DIR/frontend"
 if command -v flutter &> /dev/null; then
   # Generate platform directories if they don't exist
@@ -61,7 +66,5 @@ echo ""
 echo "To start the Flutter app (Windows):"
 echo "  cd frontend && flutter run -d windows"
 echo ""
-echo "IMPORTANT: Before starting, also run:"
-echo "  Place fdmprinter.def.json and fdmextruder.def.json in:"
-echo "  backend/slicer/cura_profiles/definitions/"
-echo "  (Download from https://github.com/Ultimaker/Cura/tree/5.7.2/resources/definitions)"
+echo "Definition files are downloaded automatically by this script."
+echo "CuraEngine binary is downloaded automatically by this script."

@@ -37,6 +37,9 @@ class ApiClient {
   Future<Response<List<int>>> getBytes(String path) =>
       _dio.get(path, options: Options(responseType: ResponseType.bytes));
 
+  Future<void> downloadFile(String apiPath, String savePath) =>
+      _dio.download(apiPath, savePath);
+
   Future<Response<T>> post<T>(String path, {dynamic data}) =>
       _dio.post(path, data: data);
 

@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 import shutil
 import uuid
 from enum import Enum
@@ -34,6 +35,14 @@ class SliceSettings(BaseModel):
     overrides: dict = {}
 
 
+# Settings that belong at machine level (before -e0 in the CuraEngine command).
+# Everything else is extruder-level (after -e0 -j fdmextruder.def.json).
+_MACHINE_SETTINGS = frozenset({
+    "machine_width", "machine_depth", "machine_height",
+    "machine_heated_bed", "machine_start_gcode", "machine_end_gcode",
+    "machine_name",
+})
+
 _PRUSA_MK4_DEFAULTS = {
     "machine_width": 250,
     "machine_depth": 210,
@@ -42,7 +51,9 @@ _PRUSA_MK4_DEFAULTS = {
     "machine_heated_bed": True,
 }
 
-_PROGRESS_PATTERN = "Progress:"
+# Matches any "NN.N%" pattern — used for CuraEngine 5.x progress lines like
+# "Progress:inset+skin:50.0%:Mesh 1/1".
+_PROGRESS_RE = re.compile(r"(\d+(?:\.\d+)?)%")
 
 
 class SlicerService:
@@ -52,11 +63,13 @@ class SlicerService:
         cura_definitions_dir: Path,
         cura_profiles_dir: Path,
         gcode_dir: Path,
+        timeout_seconds: int = 600,
     ):
         self.cura_engine = cura_engine_path
         self.definitions_dir = cura_definitions_dir
         self.profiles_dir = cura_profiles_dir
         self.gcode_dir = gcode_dir
+        self.timeout_seconds = timeout_seconds
         self._jobs: dict[str, SliceJob] = {}
 
     def list_profiles(self) -> list[str]:
@@ -105,20 +118,18 @@ class SlicerService:
         machine_def = self.definitions_dir / "fdmprinter.def.json"
         if not machine_def.exists():
             job.state = SliceState.FAILED
-            job.error = f"CuraEngine definition not found: {machine_def}"
+            job.error = (
+                f"CuraEngine definition not found: {machine_def}. "
+                "Run scripts/download_definitions.bat to download it."
+            )
             return
 
-        merged = {**_PRUSA_MK4_DEFAULTS, **self._load_profile(settings.profile_name), **settings.overrides}
-        flags = self._build_flags(merged)
-
-        cmd = [
-            str(self.cura_engine),
-            "slice",
-            "-j", str(machine_def),
-            "-l", str(stl_path),
-            "-o", str(raw_gcode),
-            *flags,
-        ]
+        merged = {
+            **_PRUSA_MK4_DEFAULTS,
+            **self._load_profile(settings.profile_name),
+            **settings.overrides,
+        }
+        cmd = self._build_cmd(stl_path, raw_gcode, merged)
 
         try:
             process = await asyncio.create_subprocess_exec(
@@ -127,16 +138,22 @@ class SlicerService:
                 stderr=asyncio.subprocess.STDOUT,
             )
 
-            async for raw_line in process.stdout:
-                line = raw_line.decode(errors="replace").strip()
-                if _PROGRESS_PATTERN in line:
-                    pct = self._parse_progress(line)
-                    if pct is not None:
-                        job.progress_percent = pct
-                        if progress_callback:
-                            await progress_callback(pct)
-
-            await process.wait()
+            try:
+                async with asyncio.timeout(self.timeout_seconds):
+                    async for raw_line in process.stdout:
+                        line = raw_line.decode(errors="replace").strip()
+                        if "Progress:" in line:
+                            pct = self._parse_progress(line)
+                            if pct is not None:
+                                job.progress_percent = pct
+                                if progress_callback:
+                                    await progress_callback(pct)
+                    await process.wait()
+            except asyncio.TimeoutError:
+                process.kill()
+                job.state = SliceState.FAILED
+                job.error = f"Slicing timed out after {self.timeout_seconds}s"
+                return
 
             if process.returncode != 0:
                 job.state = SliceState.FAILED
@@ -159,10 +176,41 @@ class SlicerService:
 
         except FileNotFoundError:
             job.state = SliceState.FAILED
-            job.error = f"CuraEngine binary not found at {self.cura_engine}. Run scripts/download_curaengine.sh."
+            job.error = (
+                f"CuraEngine binary not found at {self.cura_engine}. "
+                "Run scripts/download_curaengine.bat to download it."
+            )
         except Exception as e:
             job.state = SliceState.FAILED
             job.error = str(e)
+
+    def _build_cmd(self, stl_path: Path, raw_gcode: Path, merged_settings: dict) -> list[str]:
+        """Build the CuraEngine 5.x command.
+
+        Structure:
+          CuraEngine slice -v
+            -j fdmprinter.def.json   (base machine def)
+            -s machine_width=250 ... (machine-level overrides)
+            -e0
+            -j fdmextruder.def.json  (extruder def, if present)
+            -s layer_height=0.2 ...  (extruder-level overrides)
+            -l model.stl
+            -o output.gcode
+        """
+        machine_def = self.definitions_dir / "fdmprinter.def.json"
+        extruder_def = self.definitions_dir / "fdmextruder.def.json"
+
+        machine_kvs = {k: v for k, v in merged_settings.items() if k in _MACHINE_SETTINGS}
+        extruder_kvs = {k: v for k, v in merged_settings.items() if k not in _MACHINE_SETTINGS}
+
+        cmd = [str(self.cura_engine), "slice", "-v", "-j", str(machine_def)]
+        cmd += self._build_flags(machine_kvs)
+        cmd += ["-e0"]
+        if extruder_def.exists():
+            cmd += ["-j", str(extruder_def)]
+        cmd += self._build_flags(extruder_kvs)
+        cmd += ["-l", str(stl_path), "-o", str(raw_gcode)]
+        return cmd
 
     def _load_profile(self, profile_name: str) -> dict:
         base_path = self.profiles_dir / "base_config.json"
@@ -178,15 +226,14 @@ class SlicerService:
         for key, value in settings.items():
             if isinstance(value, bool):
                 value = "true" if value else "false"
+            elif isinstance(value, str) and ("\n" in value or '"' in value or "'" in value):
+                # Skip multi-line gcode strings (start/end gcode) — CuraEngine uses its own defaults.
+                continue
             flags.extend(["-s", f"{key}={value}"])
         return flags
 
     def _parse_progress(self, line: str) -> Optional[float]:
-        try:
-            parts = line.split("Progress:")
-            if len(parts) > 1:
-                pct_str = parts[1].strip().split()[0].rstrip("%")
-                return float(pct_str)
-        except (ValueError, IndexError):
-            pass
+        m = _PROGRESS_RE.search(line)
+        if m:
+            return min(float(m.group(1)), 100.0)
         return None

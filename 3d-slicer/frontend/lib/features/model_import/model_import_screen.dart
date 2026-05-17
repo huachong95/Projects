@@ -1,11 +1,12 @@
-import 'dart:io';
-
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api_client.dart';
+
+const _allowedExtensions = {'stl', '3mf', 'obj'};
 
 class ModelImportScreen extends StatefulWidget {
   const ModelImportScreen({super.key});
@@ -16,13 +17,14 @@ class ModelImportScreen extends StatefulWidget {
 
 class _ModelImportScreenState extends State<ModelImportScreen> {
   bool _loading = false;
+  bool _dragging = false;
   String? _errorMsg;
   Map<String, dynamic>? _meshInfo;
 
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['stl', '3mf', 'obj'],
+      allowedExtensions: _allowedExtensions.toList(),
     );
     if (result == null || result.files.isEmpty) return;
     final file = result.files.first;
@@ -31,6 +33,11 @@ class _ModelImportScreenState extends State<ModelImportScreen> {
   }
 
   Future<void> _upload(String path, String filename) async {
+    final ext = filename.split('.').last.toLowerCase();
+    if (!_allowedExtensions.contains(ext)) {
+      setState(() => _errorMsg = 'Unsupported file type: .$ext. Use STL, 3MF, or OBJ.');
+      return;
+    }
     setState(() {
       _loading = true;
       _errorMsg = null;
@@ -62,7 +69,14 @@ class _ModelImportScreenState extends State<ModelImportScreen> {
           children: [
             _DropZone(
               loading: _loading,
+              dragging: _dragging,
               onFilePicked: _pickFile,
+              onDragEntered: () => setState(() => _dragging = true),
+              onDragExited: () => setState(() => _dragging = false),
+              onFileDrop: (path, name) {
+                setState(() => _dragging = false);
+                _upload(path, name);
+              },
             ),
             if (_errorMsg != null) ...[
               const SizedBox(height: 16),
@@ -87,35 +101,66 @@ class _ModelImportScreenState extends State<ModelImportScreen> {
 
 class _DropZone extends StatelessWidget {
   final bool loading;
+  final bool dragging;
   final VoidCallback onFilePicked;
+  final VoidCallback onDragEntered;
+  final VoidCallback onDragExited;
+  final void Function(String path, String name) onFileDrop;
 
-  const _DropZone({required this.loading, required this.onFilePicked});
+  const _DropZone({
+    required this.loading,
+    required this.dragging,
+    required this.onFilePicked,
+    required this.onDragEntered,
+    required this.onDragExited,
+    required this.onFileDrop,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: loading ? null : onFilePicked,
-      child: Container(
-        height: 200,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outline,
-            style: BorderStyle.solid,
-            width: 2,
+    final cs = Theme.of(context).colorScheme;
+    return DropTarget(
+      onDragEntered: (_) => onDragEntered(),
+      onDragExited: (_) => onDragExited(),
+      onDragDone: (details) {
+        if (loading || details.files.isEmpty) return;
+        final xfile = details.files.first;
+        onFileDrop(xfile.path, xfile.name);
+      },
+      child: GestureDetector(
+        onTap: loading ? null : onFilePicked,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          height: 200,
+          decoration: BoxDecoration(
+            color: dragging ? cs.primary.withOpacity(0.08) : null,
+            border: Border.all(
+              color: dragging ? cs.primary : cs.outline,
+              style: BorderStyle.solid,
+              width: dragging ? 2.5 : 2,
+            ),
+            borderRadius: BorderRadius.circular(16),
           ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Center(
-          child: loading
-              ? const CircularProgressIndicator()
-              : Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.upload_file, size: 48, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(height: 12),
-                    const Text('Drop STL / 3MF / OBJ here, or tap to browse'),
-                  ],
-                ),
+          child: Center(
+            child: loading
+                ? const CircularProgressIndicator()
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        dragging ? Icons.file_download : Icons.upload_file,
+                        size: 48,
+                        color: dragging ? cs.primary : cs.primary,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        dragging
+                            ? 'Drop to upload'
+                            : 'Drop STL / 3MF / OBJ here, or tap to browse',
+                      ),
+                    ],
+                  ),
+          ),
         ),
       ),
     );

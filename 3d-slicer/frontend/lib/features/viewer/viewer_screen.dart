@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:go_router/go_router.dart';
@@ -19,14 +20,15 @@ class _ViewerScreenState extends State<ViewerScreen> {
   InAppWebViewController? _webViewController;
   bool _modelLoaded = false;
   String? _sliceJobId;
+  Map<String, dynamic>? _sliceMeta;
   int _totalLayers = 0;
   int _currentLayer = 0;
   bool _layerMode = false;
+  bool _downloadingGcode = false;
 
   @override
   void initState() {
     super.initState();
-    // Extract sliceJobId from URI query params
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final uri = GoRouterState.of(context).uri;
       _sliceJobId = uri.queryParameters['sliceJobId'];
@@ -38,7 +40,11 @@ class _ViewerScreenState extends State<ViewerScreen> {
     try {
       final resp = await apiClient.get<Map<String, dynamic>>(
           '/api/slice/$_sliceJobId/metadata');
-      setState(() => _totalLayers = (resp.data?['layer_count'] as num?)?.toInt() ?? 0);
+      if (resp.data == null) return;
+      setState(() {
+        _sliceMeta = resp.data;
+        _totalLayers = (resp.data!['layer_count'] as num?)?.toInt() ?? 0;
+      });
     } catch (_) {}
   }
 
@@ -46,9 +52,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
     _webViewController = controller;
     controller.addJavaScriptHandler(
       handlerName: 'onModelLoaded',
-      callback: (args) {
-        setState(() => _modelLoaded = true);
-      },
+      callback: (_) => setState(() => _modelLoaded = true),
     );
     _loadModel();
   }
@@ -74,13 +78,42 @@ class _ViewerScreenState extends State<ViewerScreen> {
     } catch (_) {}
   }
 
+  Future<void> _downloadGcode() async {
+    if (_sliceJobId == null) return;
+    final savePath = await FilePicker.platform.saveFile(
+      dialogTitle: 'Save G-code',
+      fileName: 'print_$_sliceJobId.gcode',
+      allowedExtensions: ['gcode'],
+      type: FileType.custom,
+    );
+    if (savePath == null) return;
+
+    setState(() => _downloadingGcode = true);
+    try {
+      await apiClient.downloadFile('/api/slice/$_sliceJobId/gcode', savePath);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('G-code saved to $savePath')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Download failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _downloadingGcode = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('3D Viewer'),
         actions: [
-          if (_sliceJobId != null)
+          if (_sliceJobId != null) ...[
             TextButton.icon(
               icon: Icon(_layerMode ? Icons.view_in_ar : Icons.layers),
               label: Text(_layerMode ? '3D View' : 'Layers'),
@@ -93,6 +126,18 @@ class _ViewerScreenState extends State<ViewerScreen> {
                 }
               },
             ),
+            IconButton(
+              icon: _downloadingGcode
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.download),
+              tooltip: 'Download G-code',
+              onPressed: _downloadingGcode ? null : _downloadGcode,
+            ),
+          ],
           IconButton(
             icon: const Icon(Icons.tune),
             onPressed: () => context.go('/settings/${widget.jobId}'),
@@ -119,6 +164,8 @@ class _ViewerScreenState extends State<ViewerScreen> {
               ],
             ),
           ),
+          if (_sliceMeta != null)
+            _MetaBar(meta: _sliceMeta!),
           if (_layerMode && _totalLayers > 0)
             _LayerSlider(
               currentLayer: _currentLayer,
@@ -129,6 +176,60 @@ class _ViewerScreenState extends State<ViewerScreen> {
       ),
     );
   }
+}
+
+class _MetaBar extends StatelessWidget {
+  final Map<String, dynamic> meta;
+  const _MetaBar({required this.meta});
+
+  @override
+  Widget build(BuildContext context) {
+    final layers = meta['layer_count'] as int? ?? 0;
+    final seconds = (meta['estimated_time_seconds'] as num?)?.toInt() ?? 0;
+    final filamentMm = (meta['filament_used_mm'] as num?)?.toDouble() ?? 0.0;
+    final filamentG = (meta['filament_used_g'] as num?)?.toDouble() ?? 0.0;
+    final timeStr = seconds > 0 ? _fmtTime(seconds) : '—';
+    final filamentStr = filamentG > 0
+        ? '${filamentG.toStringAsFixed(1)} g'
+        : filamentMm > 0
+            ? '${(filamentMm / 1000).toStringAsFixed(2)} m'
+            : '—';
+
+    return Container(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _Chip(Icons.layers, '$layers layers'),
+          _Chip(Icons.access_time, timeStr),
+          _Chip(Icons.straighten, filamentStr),
+        ],
+      ),
+    );
+  }
+
+  static String _fmtTime(int seconds) {
+    final h = seconds ~/ 3600;
+    final m = (seconds % 3600) ~/ 60;
+    if (h > 0) return '${h}h ${m}m';
+    return '${m}m';
+  }
+}
+
+class _Chip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _Chip(this.icon, this.label);
+
+  @override
+  Widget build(BuildContext context) => Row(
+        children: [
+          Icon(icon, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          const SizedBox(width: 4),
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
+        ],
+      );
 }
 
 class _LayerSlider extends StatelessWidget {

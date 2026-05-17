@@ -29,9 +29,14 @@ echo.
 echo 3. Downloading CuraEngine...
 call "%~dp0download_curaengine.bat" || echo    WARNING: CuraEngine download failed. Download manually.
 
+REM Definition files
+echo.
+echo 4. Downloading CuraEngine definition files...
+call "%~dp0download_definitions.bat" || echo    WARNING: Definition file download failed. Download manually.
+
 REM Flutter
 echo.
-echo 4. Setting up Flutter app...
+echo 5. Setting up Flutter app...
 cd /d "%ROOT%\frontend"
 where flutter >nul 2>&1
 IF %ERRORLEVEL% EQU 0 (
@@ -55,8 +60,7 @@ echo.
 echo To start the Flutter app:
 echo   cd frontend ^&^& flutter run -d windows
 echo.
-echo IMPORTANT: Place fdmprinter.def.json and fdmextruder.def.json in:
-echo   backend\slicer\cura_profiles\definitions\
-echo   (Download from https://github.com/Ultimaker/Cura/tree/5.7.2/resources/definitions)
+echo Definition files are downloaded automatically by this script.
+echo CuraEngine binary is downloaded automatically by this script.
 
 pause

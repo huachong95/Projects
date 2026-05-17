@@ -54,6 +54,7 @@ slicer_service = SlicerService(
     cura_definitions_dir=settings.cura_definitions_dir,
     cura_profiles_dir=settings.cura_profiles_dir,
     gcode_dir=settings.gcode_dir,
+    timeout_seconds=settings.slice_timeout_seconds,
 )
 printer_manager = PrinterManager()
 timelapse_service = TimelapseService(settings.frames_dir)

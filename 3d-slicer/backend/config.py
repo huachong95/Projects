@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     cura_definitions_dir: Path = BASE_DIR / "slicer" / "cura_profiles" / "definitions"
     cura_profiles_dir: Path = BASE_DIR / "slicer" / "cura_profiles"
 
+    slice_timeout_seconds: int = 600
+
     ai_model_path: Path = BASE_DIR / "monitoring" / "models" / "failure_detector.onnx"
     ai_alert_threshold: float = 0.75
     ai_alert_consecutive_frames: int = 3
