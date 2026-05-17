@@ -89,7 +89,7 @@ class _ModelImportScreenState extends State<ModelImportScreen> {
               FilledButton.icon(
                 icon: const Icon(Icons.tune),
                 label: const Text('Slice Settings'),
-                onPressed: () => context.go('/settings/${_meshInfo!['job_id']}'),
+                onPressed: () => context.push('/settings/${_meshInfo!['job_id']}'),
               ),
             ],
           ],

@@ -84,7 +84,7 @@ class _PrintMonitorScreenState extends State<PrintMonitorScreen> {
           IconButton(
             icon: const Icon(Icons.videocam),
             tooltip: 'Timelapses',
-            onPressed: () => context.go('/timelapse'),
+            onPressed: () => context.push('/timelapse'),
           ),
         ],
       ),

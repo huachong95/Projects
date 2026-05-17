@@ -141,7 +141,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
           ],
           IconButton(
             icon: const Icon(Icons.tune),
-            onPressed: () => context.go('/settings/${widget.jobId}'),
+            onPressed: () => context.push('/settings/${widget.jobId}'),
             tooltip: 'Slice settings',
           ),
         ],
