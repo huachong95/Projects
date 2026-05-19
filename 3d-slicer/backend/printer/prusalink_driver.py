@@ -131,7 +131,7 @@ class PrusaLinkDriver:
                 "/api/v1/printer/gcode",
                 json={"script": command},
             )
-            return resp.status_code == 204
+            return resp.status_code in (200, 204)
         except httpx.RequestError:
             return False
 
@@ -146,7 +146,7 @@ class PrusaLinkDriver:
                 "/api/v1/job",
                 json={"command": command},
             )
-            return resp.status_code == 204
+            return resp.status_code in (200, 204)
         except httpx.RequestError:
             return False
 
