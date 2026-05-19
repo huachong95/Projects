@@ -68,11 +68,19 @@ async def connect(config: ConnectionConfig):
     success = await _printer.connect(config)
     if not success:
         raise HTTPException(503, "Failed to connect to printer")
-    return {"status": "connected"}
+    # Auto-start camera stream if the driver exposes a camera URL
+    from monitoring.camera_stream import camera_stream
+    cam_url = _printer.get_camera_url()
+    if cam_url:
+        camera_stream.set_url(cam_url)
+        await camera_stream.start()
+    return {"status": "connected", "camera_url": cam_url}
 
 
 @router.delete("/connect")
 async def disconnect():
+    from monitoring.camera_stream import camera_stream
+    await camera_stream.stop()
     await _printer.disconnect()
     return {"status": "disconnected"}
 
