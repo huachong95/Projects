@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from printer.printer_manager import ConnectionConfig, PrinterManager
-from printer.prusalink_driver import discover_prusalink
+from printer.prusalink_driver import PrinterStatus, discover_prusalink
 from slicer.slicer_service import SlicerService, SliceState
 
 router = APIRouter()
@@ -87,13 +87,15 @@ async def disconnect():
 
 @router.get("/status")
 async def get_status():
-    _require_printer()
+    if not _printer or not _printer.is_connected:
+        return PrinterStatus()
     return await _printer.get_status()
 
 
 @router.get("/temp-history")
 async def get_temp_history():
-    _require_printer()
+    if not _printer or not _printer.is_connected:
+        return {"readings": []}
     return {"readings": [r.model_dump() for r in _printer.get_temp_history()]}
 
 
