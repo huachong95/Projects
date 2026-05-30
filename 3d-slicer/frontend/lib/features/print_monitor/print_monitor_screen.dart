@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -49,8 +50,34 @@ class _PrintMonitorScreenState extends State<PrintMonitorScreen> {
     }
   }
 
+  Future<void> _sendCommand(String path, String successMsg) async {
+    try {
+      await apiClient.post(path);
+      _showSnack(successMsg);
+    } catch (e) {
+      _showSnack(_errorText(e));
+    }
+  }
+
+  String _errorText(Object e) {
+    if (e is DioException) {
+      final detail = e.response?.data;
+      if (detail is Map && detail['detail'] != null) {
+        return detail['detail'].toString();
+      }
+      return 'Request failed (${e.response?.statusCode ?? 'no response'})';
+    }
+    return 'Request failed';
+  }
+
+  void _showSnack(String msg) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    }
+  }
+
   void _startCameraPolling() {
-    _cameraTimer = Timer.periodic(const Duration(milliseconds: 250), (_) async {
+    _cameraTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
       try {
         final resp = await apiClient.get<List<int>>('/api/monitoring/camera/snapshot');
         if (resp.statusCode == 200 && resp.data != null && mounted) {
@@ -135,12 +162,12 @@ class _PrintMonitorScreenState extends State<PrintMonitorScreen> {
                       OutlinedButton.icon(
                         icon: const Icon(Icons.pause),
                         label: const Text('Pause'),
-                        onPressed: () => apiClient.post('/api/printer/pause'),
+                        onPressed: () => _sendCommand('/api/printer/pause', 'Print paused'),
                       ),
                       OutlinedButton.icon(
                         icon: const Icon(Icons.play_arrow),
                         label: const Text('Resume'),
-                        onPressed: () => apiClient.post('/api/printer/resume'),
+                        onPressed: () => _sendCommand('/api/printer/resume', 'Print resumed'),
                       ),
                       OutlinedButton.icon(
                         icon: const Icon(Icons.stop, color: Colors.red),
@@ -174,7 +201,7 @@ class _PrintMonitorScreenState extends State<PrintMonitorScreen> {
       ),
     );
     if (confirmed == true) {
-      await apiClient.post('/api/printer/cancel');
+      await _sendCommand('/api/printer/cancel', 'Print cancelled');
     }
   }
 }

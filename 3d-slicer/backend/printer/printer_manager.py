@@ -58,9 +58,9 @@ class PrinterManager:
     async def upload_and_print(self, gcode_path: str, filename: str) -> bool:
         if not self._driver:
             return False
-        if not await self._driver.upload_gcode(gcode_path, filename):
-            return False
-        return await self._driver.start_print(filename)
+        # Upload and start in one step via the Print-After-Upload header; this
+        # avoids a race where the file isn't registered yet when we POST print.
+        return await self._driver.upload_gcode(gcode_path, filename, print_after=True)
 
     async def pause(self) -> bool:
         return await self._driver.pause() if self._driver else False
@@ -74,7 +74,14 @@ class PrinterManager:
     async def send_gcode(self, command: str) -> bool:
         return await self._driver.send_gcode(command) if self._driver else False
 
-    def get_camera_url(self) -> Optional[str]:
+    async def get_snapshot(self) -> Optional[bytes]:
         if isinstance(self._driver, PrusaLinkDriver):
-            return self._driver.get_camera_url()
+            return await self._driver.get_snapshot()
         return None
+
+    @property
+    def camera_available(self) -> bool:
+        return isinstance(self._driver, PrusaLinkDriver) and self._driver.camera_available
+
+    def supports_gcode(self) -> bool:
+        return self._driver is not None and self._driver.supports_gcode()

@@ -101,6 +101,12 @@ async def websocket_endpoint(websocket: WebSocket, channel: str):
 @app.get("/api/monitoring/camera/snapshot")
 async def camera_snapshot():
     from fastapi.responses import Response
+    # Prefer the connected printer's camera (PrusaLink JPEG snapshot).
+    if printer_manager.camera_available:
+        frame = await printer_manager.get_snapshot()
+        if frame:
+            return Response(content=frame, media_type="image/jpeg")
+    # Fall back to a manually-configured MJPEG stream (e.g. external webcam).
     frame = camera_stream.get_latest_frame()
     if frame is None:
         return Response(status_code=204)

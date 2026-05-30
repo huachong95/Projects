@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from printer.printer_manager import ConnectionConfig, PrinterManager
-from printer.prusalink_driver import discover_prusalink
+from printer.prusalink_driver import PrinterStatus, discover_prusalink
 from slicer.slicer_service import SlicerService
 
 router = APIRouter()
@@ -49,8 +49,10 @@ async def disconnect():
 
 @router.get("/status")
 async def get_status():
+    # Always return 200 with a status object. When disconnected we return a
+    # default (connected=False) status so the UI can poll without error spam.
     if not _printer.is_connected:
-        raise HTTPException(503, "Printer not connected")
+        return PrinterStatus(connected=False)
     return await _printer.get_status()
 
 
@@ -71,7 +73,8 @@ async def start_print(req: PrintRequest):
 async def pause():
     if not _printer.is_connected:
         raise HTTPException(503, "Printer not connected")
-    await _printer.pause()
+    if not await _printer.pause():
+        raise HTTPException(409, "Could not pause — no active job or printer rejected the command")
     return {"status": "paused"}
 
 
@@ -79,7 +82,8 @@ async def pause():
 async def resume():
     if not _printer.is_connected:
         raise HTTPException(503, "Printer not connected")
-    await _printer.resume()
+    if not await _printer.resume():
+        raise HTTPException(409, "Could not resume — no paused job or printer rejected the command")
     return {"status": "resumed"}
 
 
@@ -87,21 +91,25 @@ async def resume():
 async def cancel():
     if not _printer.is_connected:
         raise HTTPException(503, "Printer not connected")
-    await _printer.cancel()
+    if not await _printer.cancel():
+        raise HTTPException(409, "Could not cancel — no active job or printer rejected the command")
     return {"status": "cancelled"}
 
 
 @router.post("/gcode")
 async def send_gcode(cmd: GcodeCommand):
-    if not _printer.is_connected:
-        raise HTTPException(503, "Printer not connected")
-    await _printer.send_gcode(cmd.command)
-    return {"status": "sent"}
+    # PrusaLink does not expose an arbitrary G-code endpoint, so movement /
+    # temperature / fan control cannot be sent this way. Report it clearly
+    # instead of pretending it worked.
+    raise HTTPException(
+        501,
+        "Sending raw G-code is not supported over PrusaLink. "
+        "Control the printer from its touchscreen.",
+    )
 
 
 @router.get("/camera-url")
 async def get_camera_url():
-    url = _printer.get_camera_url()
-    if not url:
+    if not _printer.camera_available:
         raise HTTPException(404, "No camera available")
-    return {"url": url}
+    return {"url": "/api/monitoring/camera/snapshot"}

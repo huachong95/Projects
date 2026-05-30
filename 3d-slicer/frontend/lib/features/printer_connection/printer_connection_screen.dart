@@ -35,7 +35,7 @@ class _PrinterConnectionScreenState extends State<PrinterConnectionScreen> {
   Future<void> _loadCurrentStatus() async {
     try {
       final resp = await apiClient.get<Map<String, dynamic>>('/api/printer/status');
-      setState(() => _connected = resp.statusCode == 200);
+      setState(() => _connected = resp.data?['connected'] == true);
     } catch (_) {
       setState(() => _connected = false);
     }
