@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/api_client.dart';
 import 'router.dart';
+import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,13 +18,8 @@ class SlicerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: '3D Slicer',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFE85D04),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.dark,
       routerConfig: appRouter,
     );
   }
