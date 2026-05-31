@@ -49,6 +49,10 @@ class _HomeScreenState extends State<HomeScreen> {
         '/monitor', AppColors.success),
     _Action(Icons.movie_outlined, 'Timelapses', 'Watch completed prints',
         '/timelapse', AppColors.accent),
+    _Action(Icons.history, 'Print History', 'Past jobs & stats',
+        '/history', AppColors.cool),
+    _Action(Icons.bubble_chart_outlined, 'Filament', 'Spool inventory & usage',
+        '/filament', AppColors.primaryBright),
   ];
 
   @override

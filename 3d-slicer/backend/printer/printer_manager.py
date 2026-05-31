@@ -26,6 +26,22 @@ class PrinterManager:
     def __init__(self):
         self._driver: Optional[PrusaLinkDriver] = None
         self._config: Optional[ConnectionConfig] = None
+        # Metadata about a print we just kicked off, so the status poll loop
+        # can attribute slice job + filament usage to the history record.
+        self._pending_print: Optional[dict] = None
+
+    def set_pending_print(self, filename: str, slice_job_id: Optional[str],
+                          filament_used_g: float) -> None:
+        self._pending_print = {
+            "filename": filename,
+            "slice_job_id": slice_job_id,
+            "filament_used_g": filament_used_g,
+        }
+
+    def take_pending_print(self) -> Optional[dict]:
+        pending = self._pending_print
+        self._pending_print = None
+        return pending
 
     async def connect(self, config: ConnectionConfig) -> bool:
         await self.disconnect()

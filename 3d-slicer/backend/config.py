@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     frames_dir: Path = BASE_DIR / "data" / "timelapses"
     gcode_dir: Path = BASE_DIR / "data" / "gcode"
 
+    history_file: Path = BASE_DIR / "data" / "print_history.json"
+    filament_file: Path = BASE_DIR / "data" / "filament_spools.json"
+
     cura_engine_path: Path = BASE_DIR / "slicer" / "cura_engine" / "CuraEngine"
     cura_definitions_dir: Path = BASE_DIR / "slicer" / "cura_profiles" / "definitions"
     cura_profiles_dir: Path = BASE_DIR / "slicer" / "cura_profiles"
