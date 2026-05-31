@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/api_client.dart';
 import '../../core/websocket_client.dart';
 import '../../shared/models/slice_profile.dart';
+import '../../shared/widgets/animated_background.dart';
+import '../../theme/app_theme.dart';
 
 class SliceSettingsScreen extends StatefulWidget {
   final String jobId;
@@ -49,7 +51,7 @@ class _SliceSettingsScreenState extends State<SliceSettingsScreen> {
         });
         final id = msg['data']['slice_job_id'] as String?;
         if (id != null && mounted) {
-          context.go('/viewer/${widget.jobId}?sliceJobId=$id');
+          context.push('/viewer/${widget.jobId}?sliceJobId=$id');
         }
       }
     });
@@ -86,7 +88,10 @@ class _SliceSettingsScreenState extends State<SliceSettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Slice Settings')),
-      body: SingleChildScrollView(
+      body: AnimatedBackground(
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -192,20 +197,48 @@ class _SliceSettingsScreenState extends State<SliceSettingsScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Text(_errorMsg!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                    style: const TextStyle(color: AppColors.danger)),
               ),
             if (_slicing) ...[
-              LinearProgressIndicator(value: _sliceProgress / 100),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Slicing…',
+                      style: TextStyle(color: AppColors.onSurfaceDim, fontWeight: FontWeight.w600)),
+                  Text('${_sliceProgress.toStringAsFixed(0)}%',
+                      style: const TextStyle(fontWeight: FontWeight.w800)),
+                ],
+              ),
               const SizedBox(height: 8),
-              Text('Slicing… ${_sliceProgress.toStringAsFixed(0)}%'),
-              const SizedBox(height: 12),
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: (_sliceProgress / 100).clamp(0.0, 1.0)),
+                duration: AppMotion.med,
+                curve: AppMotion.curve,
+                builder: (_, v, __) => ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  child: LinearProgressIndicator(
+                    value: v,
+                    minHeight: 8,
+                    backgroundColor: AppColors.surfaceHigh,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
             ],
-            FilledButton.icon(
-              icon: const Icon(Icons.layers),
-              label: Text(_slicing ? 'Slicing…' : 'Slice'),
-              onPressed: _slicing ? null : _startSlice,
+            SizedBox(
+              height: 52,
+              child: FilledButton.icon(
+                icon: _slicing
+                    ? const SizedBox(
+                        width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.layers),
+                label: Text(_slicing ? 'Slicing…' : 'Slice model'),
+                onPressed: _slicing ? null : _startSlice,
+              ),
             ),
           ],
+        ),
+          ),
         ),
       ),
     );
@@ -218,16 +251,29 @@ class _Section extends StatelessWidget {
   const _Section({required this.title, required this.child});
 
   @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Text(title, style: Theme.of(context).textTheme.titleSmall),
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: AppSpace.md),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpace.md),
+          decoration: BoxDecoration(
+            color: AppColors.surface.withOpacity(0.85),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: AppColors.surfaceBorder),
           ),
-          child,
-          const SizedBox(height: 8),
-        ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title.toUpperCase(),
+                  style: const TextStyle(
+                      color: AppColors.onSurfaceDim,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                      letterSpacing: 0.6)),
+              const SizedBox(height: AppSpace.sm),
+              child,
+            ],
+          ),
+        ),
       );
 }
 
