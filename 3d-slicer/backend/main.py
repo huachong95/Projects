@@ -6,13 +6,16 @@ from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
-from api import routes_mesh, routes_printer, routes_slicer
+from api import routes_filament, routes_history, routes_mesh, routes_printer, routes_slicer
 from api.websockets import ws_manager
 from config import settings
 from monitoring.ai_detector import AIMonitor, FailureDetector
 from monitoring.camera_stream import camera_stream
+from monitoring.print_history import PrintHistoryService
 from monitoring.timelapse_service import TimelapseService
 from printer.printer_manager import PrinterManager
+from printer.prusalink_driver import PrinterState
+from slicer.filament_service import FilamentService
 from slicer.mesh_service import MeshService
 from slicer.slicer_service import SlicerService
 
@@ -28,7 +31,9 @@ async def lifespan(app: FastAPI):
         )
 
     # Start print status polling loop
-    app.state.poll_task = asyncio.create_task(_poll_printer_status(app.state.printer))
+    app.state.poll_task = asyncio.create_task(
+        _poll_printer_status(app.state.printer, app.state.history, app.state.filament)
+    )
 
     yield
 
@@ -57,6 +62,8 @@ slicer_service = SlicerService(
 )
 printer_manager = PrinterManager()
 timelapse_service = TimelapseService(settings.frames_dir)
+history_service = PrintHistoryService(settings.history_file)
+filament_service = FilamentService(settings.filament_file)
 failure_detector = FailureDetector(settings.ai_model_path, settings.ai_alert_threshold)
 ai_monitor = AIMonitor(failure_detector, settings.ai_inference_interval_seconds)
 
@@ -65,16 +72,22 @@ app.state.mesh = mesh_service
 app.state.slicer = slicer_service
 app.state.printer = printer_manager
 app.state.timelapse = timelapse_service
+app.state.history = history_service
+app.state.filament = filament_service
 app.state.ai_monitor = ai_monitor
 
 # Wire up routers
 routes_mesh.init(mesh_service)
 routes_slicer.init(slicer_service, settings.temp_dir)
 routes_printer.init(printer_manager, slicer_service)
+routes_history.init(history_service)
+routes_filament.init(filament_service)
 
 app.include_router(routes_mesh.router, prefix="/api/mesh", tags=["mesh"])
 app.include_router(routes_slicer.router, prefix="/api/slice", tags=["slicer"])
 app.include_router(routes_printer.router, prefix="/api/printer", tags=["printer"])
+app.include_router(routes_history.router, prefix="/api/history", tags=["history"])
+app.include_router(routes_filament.router, prefix="/api/filament", tags=["filament"])
 
 
 @app.get("/health")
@@ -161,12 +174,56 @@ async def compile_timelapse(job_id: str):
     return {"status": "compiled", "path": str(path)}
 
 
-async def _poll_printer_status(printer: PrinterManager) -> None:
+_DONE_STATES = {PrinterState.IDLE, PrinterState.READY, PrinterState.STOPPED}
+
+
+async def _poll_printer_status(
+    printer: PrinterManager,
+    history: PrintHistoryService,
+    filament: FilamentService,
+) -> None:
+    """Poll the printer, broadcast status, and drive the print-history /
+    filament lifecycle off state transitions."""
     while True:
         await asyncio.sleep(2)
-        if printer.is_connected:
-            status = await printer.get_status()
-            await ws_manager.broadcast("print_status", "status", status.model_dump())
+        if not printer.is_connected:
+            continue
+        status = await printer.get_status()
+        await ws_manager.broadcast("print_status", "status", status.model_dump())
+
+        try:
+            _track_lifecycle(status, history, filament)
+        except Exception as exc:  # never let bookkeeping kill the poll loop
+            print(f"print-history tracking error: {exc}", file=sys.stderr)
+
+
+def _track_lifecycle(status, history: PrintHistoryService, filament: FilamentService) -> None:
+    state = status.state
+    progress = status.progress_percent or 0.0
+    active = history.active()
+
+    if active is None:
+        # Open a record when a print begins.
+        if state in (PrinterState.PRINTING, PrinterState.PAUSED):
+            pending = printer_manager.take_pending_print() or {}
+            history.start_record(
+                filename=status.filename or pending.get("filename") or "Print",
+                slice_job_id=pending.get("slice_job_id"),
+                filament_used_g=pending.get("filament_used_g", 0.0),
+            )
+        return
+
+    # A record is open — decide whether it has ended.
+    if state == PrinterState.FINISHED or (state in _DONE_STATES and progress >= 99):
+        record = history.complete_record("completed", progress)
+        if record and record.filament_used_g > 0:
+            filament.deduct_from_active(record.filament_used_g)
+    elif state == PrinterState.ERROR:
+        history.complete_record("failed", progress)
+    elif state in _DONE_STATES:
+        history.complete_record("cancelled", progress)
+    else:
+        history.update_progress(progress)
 
 
 if __name__ == "__main__":

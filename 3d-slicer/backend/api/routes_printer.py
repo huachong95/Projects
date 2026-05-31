@@ -66,6 +66,10 @@ async def start_print(req: PrintRequest):
     success = await _printer.upload_and_print(job.processed_gcode_path, req.filename)
     if not success:
         raise HTTPException(503, "Failed to start print")
+    # Remember slice + filament estimate so the poll loop can log history and
+    # deduct filament when the print finishes.
+    filament_g = job.metadata.filament_used_g if job.metadata else 0.0
+    _printer.set_pending_print(req.filename, req.slice_job_id, filament_g)
     return {"status": "printing"}
 
 
